@@ -1,0 +1,1 @@
+EasyLoader.exe 31 8007 CCSEM3-RA-02_V2_Esp32_29102025.bin 192.168.1.20

@@ -1,0 +1,5 @@
+В папке ../NeonGenesisBootloader/src/ находятся исходники приложения, при изменении исходников нужно собрать исполняемый файл.
+    Перейдите в папку "NeonGenesisBootloaderUDP\src" через консоль и выполните команду "sudo chmod 777 *".
+    Выполните в этом каталоге скрипт "install.sh", а после завершения выполните скрипт "build_application.sh"
+    Из появившейся папки "dist" скоопируйте исполняемый файл "EasyLoader" в папку "NeonGenesisBootloader".
+    В папке "NeonGenesisBootloader" выполните команду "sudo chmod 777 *"и повторите прошивку устройства.

@@ -1,0 +1,66 @@
+1. Обновление устройств через последовательный порт
+
+     1.1. Обновление по интерфейсу RS485 (или через RS232) производится скриптами:
+    (sudo ./update_X.sh $1 $2), где 
+        X - наименование устройства (Chademo, CCS, GBT, GBT2, 2CAN, LCSC, BLCC)
+        $1 - порт RS485
+        $2 - файл прошивки (.bin)
+
+    1.2. Обновление подпрограммы-трансивера производится в устройствах скриптами:
+    (sudo ./update_X_transceiver.sh $1 $2), где
+        X - наименование устройства (Chademo, CCS, GBT, GBT2)
+        $1 - порт RS485
+        $2 - файл прошивки (Transceiver_stable.bin)
+
+    1.3. Обновление конфигурации в EEPROM производится в устройствах скриптами:
+    (sudo ./update_X_eeprom.sh $1 $2), где
+        X - наименование устройства (Chademo, CCS, GBT, GBT2)
+        $1 - порт RS485
+        $2 - файл прошивки (.ini)
+
+    1.4. Обновление устройств по интерфейсу CAN производится через контроллеры скриптами:
+    (sudo ./update_X_N_from_Y.sh $1 $2), где 
+        X - наименование CAN-устройства (DIDO, BM, 2CAN, LCSC, BLCC)
+        N - номер устройства
+        Y - наименование контроллера (Chademo, CCS, GBT, GBT2)
+        $1 - порт RS485
+        $2 - файл прошивки (.bin)
+    
+2. Обновление устройств по UDP
+
+    2.1 Обновление LAN-RA:
+    (sudo ./update_lanra_post_X.sh $1), где
+        X - номер стойки
+        $1 - файл прошивки (.bin)
+
+    2.2 Обновление устройств через LAN-RA:
+    (sudo ./X_post_Y.sh $1), где
+        X - скрипт из п. 1.1
+        Y - номер стойки
+        $1 - файл прошивки (.bin)
+
+    2.3 Обновление CAN-устройств напрямую через LAN-RA:
+    (sudo ./update_X_N_by_lanra_post_Y.sh $1), где 
+        X - наименование CAN-устройства (DIDO, BM, 2CAN, LCSC, BLCC)
+        N - номер устройства
+        Y - номер стойки
+        $1 - файл прошивки (.bin)
+
+    2.4 Обновление CCSEM3 (Type-2):
+    (sudo ./update_type2.sh $1), где 
+        $1 - файл прошивки (.bin)
+
+    2.5 Обновление ESP32 через CCSEM3 (Type-2):
+    (sudo ./update_esp32_by_type2.sh $1), где 
+        $1 - файл прошивки ESP32 (.bin)
+
+3. Примеры и премечания
+    Пример: sudo ./update_ccs.sh /dev/ttyS0 ChS-RA-04.v2_CdM_CCS_GBT_160kWt_2CAN_noCcsBoard_1.7.7_6.5.2025_3Ch_release.bin.
+    Пример: sudo ./update_gbt_2.sh /dev/ttyS0 chS-ra-03_GBT_2_v1.3.9.bin
+    Пример: sudo ./update_dido_0_from_ccs.sh /dev/ttyS0 ChS-RA-DIDO-03_19_02_2025.bin.
+    Пример: sudo ./update_mira_1_from_gbt_2.sh /dev/ttyS0 ChS-RA-BM_09_06_2025.bin.
+    Примечания: 
+        3.1. Обновление любого модуля может производиться через любой контроллер CCS, GBT, GBT2 кроме 2CAN (update_dido_0_from_ccs.sh, update_dido_0_from_gbt.sh).
+        3.2. Нумерация модулей DIDO в наименовании скрипта начинается с индекса 0 (update_dido_0_from_ccs.sh, update_dido_1_from_ccs.sh).
+        3.3. Нумерация модулей MIRA в наименовании скрипта начинается с индекса 1 (update_mira_1_from_ccs.sh, update_mira_2_from_ccs.sh).
+        3.4. Щбновление любого из контроллеров CCS, CCS2 производится через скрипт sudo ./update_ccs.sh.
