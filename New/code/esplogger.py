@@ -18,27 +18,13 @@ class CustomLogger(TemplateLogger):
     def error(self, message):
         self.print(f"ERROR: {message}", file=sys.stderr)
 
-    def stage(self, finish=False):
-        # Collapsible stages not needed in this example
-        pass
-
     def progress_bar(
         self,
         cur_iter,
         total_iters,
-        prefix = "",
-        suffix = "",
-        bar_length: int = 30,
     ):
-        # Progress bars replaced with simple percentage output in this example
-        # percent = f"{100 * (cur_iter / float(total_iters)):.1f}"
         if cur_iter != 0: print("\r\b\r\b\r\b\r\b\r\b")
         self.output.progressBar(cur_iter / float(total_iters))
-        # self.print(f"Finished: {percent}%")
-
-    def set_verbosity(self, verbosity):
-        # Set verbosity level not needed in this example
-        pass
 
 # Replace the default logger with the custom logger
 # log.set_logger(CustomLogger())

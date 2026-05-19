@@ -7,7 +7,6 @@ class udpport:
 
     def __init__(self, ip, port, out = logger):
         localHOST = socket.gethostname()
-        localIP = socket.gethostbyname(localHOST)
         self.Port = int(port)
         self.selfIP = '255.255.255.255'#localIP
         self.destIP = ip

@@ -4,6 +4,7 @@ import serial.tools.list_ports
 from output import logger
 
 class virtualserialport:
+    
     def __init__(self, port, speed, out = logger):
         self.Port = port
         self.Speed = speed
@@ -45,13 +46,10 @@ class virtualserialport:
 
         try:
             if self.Serial:
-                # while len(frame) < 8:
-                # frame += self.Serial.read(num)
                 frame += self.Serial.readline()
             if (len(frame) >= num) & (num != 0):
                 clientMsg = "Received" + ": 0x{}".format(frame.hex())
                 self.log.log(clientMsg)
-            # else: frame += bytearray(8)
 
         except TimeoutError:
             self.log.log("\nTimeout\n")

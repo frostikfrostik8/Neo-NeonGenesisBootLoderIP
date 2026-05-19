@@ -127,5 +127,3 @@ class EEPROM:
         self.log.log("\nEEPROM buffer include {} bytes: ".format(len(config_array)) + "{}".format(config_array.hex()))
 
         return config_array
-
-

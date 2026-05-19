@@ -5,6 +5,7 @@ import datetime
 from termcolor import colored
 
 class logger:
+    
     def __init__(self):
         #LogUpdate
         self.LogUpdate = open("LogUpdate.txt", 'a')
@@ -40,13 +41,11 @@ class logger:
     def printConnectionParameters(self, speed, port, id, file):
         self.log("Speed\t\t= {}".format(speed))
         self.log("Port\t\t= {}".format(port))
-        #self.log("Command\t\t= {}".format(id))
         self.log("File name\t= {}".format(file))
 
     def printConnectionParametersIP(self, ip, port, file):
         self.log("IP\t\t= {}".format(ip))
         self.log("Port\t\t= {}".format(port))
-        #self.log("Command\t\t= {}".format(id))
         self.log("File name\t= {}".format(file))
 
     def printDevice(self, id, id_periph):
@@ -64,11 +63,13 @@ class logger:
         if(id == 0x9): main_device = "CCS-3"
         if(id == 0xB): main_device = "GBT-3"
         if(id == 0xF): main_device = "LAN-RA"
+
         if((id & 0xF0) == 0xF0): main_device = "LCSC"
 
         if(id_periph == 0x01): periph_device = "Transceiver"
         if(id_periph == 0x02): periph_device = "EEPROM"
         if(id_periph == 0x03): periph_device = "ESP32"
+
         if((id_periph & 0xF0) == 0x50): periph_device = "DIDO-{}".format(id_periph & 0x0F)
         if((id_periph & 0xF0) == 0x60): periph_device = "MIRA-{}".format(id_periph & 0x0F)
         if((id_periph & 0xF0) == 0x70): periph_device = "2CAN-{}".format(id_periph & 0x0F)
@@ -95,18 +96,19 @@ class logger:
         bottom = '¯¯' #"▔▔"
         progressBar = "█"
         progressBarTxt = "|"
+
         for i in range(0, int(completion * self.Width)):
             progressBar += '▒' #'█' #'▓' #'♿ #'🐧'
             progressBarTxt += '|'
             top += '_' #'▁'
             bottom += '¯' #'▔'
+        
         for i in range(int(completion * self.Width), self.Width):
             progressBar += ' '
             progressBarTxt += ' '
             top += '_' #'▁'
             bottom += '¯' #'▔'
 
-        #if int(completion*100) % 2: progressBar += ' '
         progressBar += '█'
         progressBarTxt += ' '
 
@@ -132,6 +134,7 @@ class logger:
             print("State [Erased failed]", file=self.LogUpdate)
 
     def printWritten(self, state, number, log_flag):
+
         if state == 0:
             print("State [Written block {}]".format(number))
             if log_flag != 0: print("State [Written block {}]".format(number), file=self.LogUpdate)
@@ -140,6 +143,7 @@ class logger:
             print("State [Written failed]", file=self.LogUpdate)
 
     def printEEPROM(self, state):
+
         if state == 0:
             print("State [Written EEPROM successfully]" + colored(" ✅", 'green'))
             print("State [Written EEPROM successfully]", file=self.LogUpdate)
@@ -148,6 +152,7 @@ class logger:
             print("State [Written EEPROM failed]", file=self.LogUpdate)
 
     def printChecked(self, state):
+
         if state == 0:
             print("State [Checked successfully]" + colored(" ✅", 'green'))
             print("State [Checked successfully]", file=self.LogUpdate)
@@ -156,6 +161,7 @@ class logger:
             print("State [Checked failed]", file=self.LogUpdate)
 
     def printVersion(self, state, text):
+
         if state == 0:
             print("State [Receive version]")
             print(text)
@@ -180,11 +186,13 @@ class logger:
         if(id == 0x9): main_device = "CCS-3"
         if(id == 0xB): main_device = "GBT-3"
         if(id == 0xF): main_device = "LAN-RA"
+
         if((id & 0xF0) == 0xF0): main_device = "LCSC"
 
         if(id_periph == 0x01): periph_device = "Transceiver"
         if(id_periph == 0x02): periph_device = "EEPROM"
         if(id_periph == 0x03): periph_device = "ESP32"
+
         if((id_periph & 0xF0) == 0x50): periph_device = "DIDO-{}".format(id_periph & 0x0F)
         if((id_periph & 0xF0) == 0x60): periph_device = "MIRA-{}".format(id_periph & 0x0F)
         if((id_periph & 0xF0) == 0x70): periph_device = "2CAN-{}".format(id_periph & 0x0F)
