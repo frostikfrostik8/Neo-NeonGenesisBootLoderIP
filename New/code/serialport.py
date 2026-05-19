@@ -46,13 +46,10 @@ class serialport:
 
         try:
             if self.Serial:
-                # while len(frame) < 8:
-                # frame += self.Serial.read(num)
                 frame += self.Serial.readline()
             if (len(frame) >= num) & (num != 0):
                 clientMsg = "Received" + ": 0x{}".format(frame.hex())
                 self.log.log(clientMsg)
-            # else: frame += bytearray(8)
 
         except serial.SerialTimeoutException:
             self.log.log("\nTimeout\n")

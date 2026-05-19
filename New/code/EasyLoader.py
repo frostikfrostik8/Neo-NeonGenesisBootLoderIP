@@ -1,17 +1,13 @@
-#import socket
 import keyboard
 import time
 import math
 from sys import argv, platform, exit
-# import re
 
 if platform.startswith("linux"):
     import virtualserialports
 
-#For ESP32
 import esptool
 import threading
-# import stopit
 
 #User Libriaries
 from output import logger
@@ -27,12 +23,6 @@ crc = crc16()
 
 #Type update
 update_type = 0
-
-# params = [10]
-# params = argv
-# print(params)
-
-# (script, id, Port, file, ip) = params
 
 #Application arguments
 if len(argv) == 4: 
@@ -79,17 +69,6 @@ Stop = 0
 #Block size 1024
 size_block = 512
 
-#Reset
-reset_type2 = bytearray(b'\x01\x06\x01\x04\x00\x01\x08\x37')#\x00\x00
-goto_type2 = bytearray(b'\x01\x06\x01\x04\x00\x04\xc8\x34')
-reset_type1 = bytearray(b'\x04\x06\x01\x04\x00\x01\x08\x62')
-reset_LCSC = bytearray(b'\xF0\x06\x01\x04\x00\x01\x00\x00') #\x88\x9E
-reset_Chademo = bytearray(b'\x02\x06\x01\x04\x00\x01\x08\x04')
-reset_CCS = bytearray(b'\x03\x06\x01\x04\x00\x01\x09\xd5')
-reset_GBT = bytearray(b'\x05\x06\x01\x04\x00\x01\x09\xb3')
-reset_GBT_2 = bytearray(b'\x08\x06\x01\x04\x00\x01\x08\xae')
-reset_2CAN = bytearray(b'\x07\x06\x01\x04\x00\x01\x08\x51')
-
 #Sync for ESP32
 sync_arr = bytearray(b'\xc0\x00\x08\x24\x00\x00\x00\x00\x00\x07\x07\x12\x20\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\x55\xc0')
 sync_resp = bytearray(b'\xc0\x01\x08\x04\x00\x07\x07\x12\x20\x00\x00\x00\x00\xc0')
@@ -115,6 +94,8 @@ current_page = 0
 received_page = 0
 write_flag = 0
 time_to_repeat = 0
+
+
 
 if file != "Reset":
     if ID_PERIPH == 0x02:
@@ -157,6 +138,10 @@ if file != "Reset":
         #Find crc all program
         crc_program = crc.findCRC(total_programm, len(total_programm))
 
+
+#Collects the complete package to send
+#(id) code command, 2 bytes, data, and add CRC
+
 def buildFrame(command, data, size):
     frame = bytearray(len(data) + 6)
     frame[0] = ID
@@ -170,10 +155,17 @@ def buildFrame(command, data, size):
 
     return frame
 
+
+#Creates a hard-coded device reset packet
+#bytes device, +06 01 04, 2 bytes command, and 00 00
+
 def buildReset(device = 0, command = 0):
     frame = bytearray(device.to_bytes(1, 'big') + b'\x06\x01\x04' + command.to_bytes(2, 'big') + b'\x00\x00')#, byteorder='big'bytearray(b'\x00\x06\x01\x04\x00\x01\x00\x00')
     frame = crc.addResetCRC(frame, len(frame))
     return frame
+
+#Do the same thing as buildReset, but + CRC
+#CRC counts normally not as a reset
 
 def buildMyReset(device = 0, command = 0):
     frame = bytearray(device.to_bytes(1, 'big') + b'\x06\x01\x04' + command.to_bytes(2, 'big') + b'\x00\x00')#, byteorder='big'bytearray(b'\x00\x06\x01\x04\x00\x01\x00\x00')
@@ -207,7 +199,6 @@ def logic(message: bytearray):
                         log.printErased(0)
                         State = 2
                         write_flag = 0
-                        #time.sleep(0.5)
                     elif message[5] == 0x02:
                         log.printErased(1)
                         State = 0
@@ -287,6 +278,9 @@ def chooseFrame():
     return frame
 
 escape = False
+
+#Retrieves the received packet's useful data (after the Title)
+#If the packet length is less than 6 bytes, an empty array is returned.
 
 def getPayload(frame):
     retval = bytearray()
@@ -393,7 +387,6 @@ def esp_logic():
     thread1.start()
 
 #---------------------Connect at 19200---------------------
-#ser.connect_reset()
 
 #Reset send
 log.log("\n---------- Try to reset device ----------")
@@ -539,12 +532,10 @@ try:
                 ptr = bytearray(8)
                 for j in range(0, 8):
                     ptr[j] = message[i + j]
-                # print(": 0x{}".format(ptr.hex()))
                 if logic(bytearray(ptr)): 
                     message.clear()
                     my_time = time.perf_counter()
                     break
-                # print(": 0x{}".format(ptr.hex()))
 
         if pb != 0:
             pb = 0
