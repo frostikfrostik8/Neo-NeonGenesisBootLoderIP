@@ -1,8 +1,8 @@
 import sys
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox
-from functools import partial  # Импорт для надежной передачи аргументов
+from functools import partial
 
-# Импортируем интерфейс из вашего файла UIv1.py
+# Импортируем интерфейс из UIv1.py
 try:
     from UIv1 import Ui_MainWindow
 except ImportError as e:
@@ -12,6 +12,7 @@ except ImportError as e:
 
 def handle_button_click(button):
     """Функция для отображения сообщения при нажатии кнопки."""
+
     # Получаем имя объекта кнопки (например, "SelectionButton")
     button_name = button.objectName()
     
@@ -36,12 +37,13 @@ def handle_button_click(button):
     QMessageBox.information(button.window(), "Информация", text)
 
 def main():
-    # Создаем экземпляр приложения и главного окна
+
+    # создания приложения и главного окна
     app = QApplication(sys.argv)
     
     window = QMainWindow()
     
-    # Создаем объект интерфейса (это то, что вы получили из UIv1.py)
+    # создание объект интерфейса (это то, что вы получили из UIv1.py)
     ui = Ui_MainWindow()
     ui.setupUi(window)  # Настройка интерфейса в окне
     
@@ -58,10 +60,12 @@ def main():
 
     # Подключаем сигналы всех кнопок для отображения сообщений
     for btn_name in buttons_to_connect:
-        # Ищем кнопку по имени в объекте UI, а не в окне
+
+        # Ищем кнопку по имени в объекте UI
         button = getattr(ui, btn_name) if hasattr(ui, btn_name) else None
         
         if button is not None:
+            
             # Используем functools.partial для связывания конкретного объекта кнопки с функцией.
             # Это надежнее, чем lambda b=button, так как исключает проблемы с замыканиями в цикле.
             button.clicked.connect(partial(handle_button_click, button))
