@@ -63,7 +63,16 @@
      </size>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>0</number>
+    </property>
+    <property name="elideMode">
+     <enum>Qt::TextElideMode::ElideMiddle</enum>
+    </property>
+    <property name="tabsClosable">
+     <bool>false</bool>
+    </property>
+    <property name="movable">
+     <bool>false</bool>
     </property>
     <widget class="QWidget" name="AutoMode">
      <attribute name="title">
@@ -848,7 +857,7 @@
      <widget class="QToolButton" name="toolButton_Modify_Config">
       <property name="geometry">
        <rect>
-        <x>390</x>
+        <x>450</x>
         <y>10</y>
         <width>51</width>
         <height>31</height>
@@ -861,8 +870,8 @@
      <widget class="QToolButton" name="toolButton_Delete_Config">
       <property name="geometry">
        <rect>
-        <x>390</x>
-        <y>330</y>
+        <x>380</x>
+        <y>10</y>
         <width>51</width>
         <height>31</height>
        </rect>
@@ -874,14 +883,14 @@
      <widget class="QToolButton" name="toolButton_add_new_config">
       <property name="geometry">
        <rect>
-        <x>500</x>
+        <x>530</x>
         <y>10</y>
         <width>121</width>
         <height>31</height>
        </rect>
       </property>
       <property name="text">
-       <string>Add New</string>
+       <string>Add New/Accept</string>
       </property>
      </widget>
     </widget>
