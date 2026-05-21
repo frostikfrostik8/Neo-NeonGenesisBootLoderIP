@@ -18,8 +18,8 @@ def handle_button_click(button):
     
     # Словарь для определения текста сообщения
     messages = {
-        "SelectionButton": ("Выбрать",),
-        "loadBatton": ("Загрузить",),
+        "SelectionButton_auto": ("Выбрать",),
+        "loadBatton_auto": ("Загрузить",),
         "SelectionButton_manual": ("Выбрать",),
         "loadBatton_manual": ("Загрузить",),
         "toolButton_Modify_Config": ("Изменить",),
@@ -49,8 +49,8 @@ def main():
     
     # Список кнопок для подключения событий
     buttons_to_connect = [
-        "SelectionButton", 
-        "loadBatton", 
+        "SelectionButton_auto", 
+        "loadBatton_auto", 
         "SelectionButton_manual", 
         "loadBatton_manual", 
         "toolButton_Modify_Config", 
@@ -65,7 +65,7 @@ def main():
         button = getattr(ui, btn_name) if hasattr(ui, btn_name) else None
         
         if button is not None:
-            
+
             # Используем functools.partial для связывания конкретного объекта кнопки с функцией.
             # Это надежнее, чем lambda b=button, так как исключает проблемы с замыканиями в цикле.
             button.clicked.connect(partial(handle_button_click, button))

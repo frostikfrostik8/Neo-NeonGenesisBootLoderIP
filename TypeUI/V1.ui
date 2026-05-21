@@ -78,7 +78,7 @@
      <attribute name="title">
       <string>Auto Mode</string>
      </attribute>
-     <widget class="QPushButton" name="SelectionButton">
+     <widget class="QPushButton" name="SelectionButton_auto">
       <property name="geometry">
        <rect>
         <x>480</x>
@@ -100,7 +100,7 @@
        <bool>true</bool>
       </property>
      </widget>
-     <widget class="QPushButton" name="loadBatton">
+     <widget class="QPushButton" name="loadBatton_auto">
       <property name="geometry">
        <rect>
         <x>10</x>
