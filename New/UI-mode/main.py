@@ -4,72 +4,133 @@ from functools import partial
 
 try:
     from UIv1 import Ui_MainWindow
+    
+    from file_selector import FileSelector
+    from config_manager import ConfigManager
+    from safety_dialog import SafetyConfirmDialog
+    
+    from validating import validate
+    
 except ImportError as e:
-    print(f"Ошибка импорта UIv1.py: {e}")
-    print("Убедитесь, что файл UIv1.py находится в той же папке, что и main.py")
+    print(f"Ошибка импорта UI: {e}")
     sys.exit(1)
 
-def handle_button_click(button):
-    """Функция для отображения сообщения при нажатии кнопки."""
+class EasyLoaderWindow(QMainWindow):
 
-    button_name = button.objectName()
-    
-    # Словарь для определения текста сообщения
-    messages = {
-        "SelectionButton_auto": ("Выбрать",),
-        "loadBatton_auto": ("Загрузить",),
-        "SelectionButton_manual": ("Выбрать",),
-        "loadBatton_manual": ("Загрузить",),
-        "toolButton_Modify_Config": ("Изменить",),
-        "toolButton_Delete_Config": ("Удалить",),
-        "toolButton_add_new_config": ("Добавить",)
-    }
+    def __init__(self):
+        super().__init__()
+        
+        # Инициализация UI
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
+        
+        # Переменные для хранения полных путей (раздельно для каждого режима)
+        self.auto_file_path = ""
+        self.manual_file_path = ""
 
-    # Определение текст сообщения
-    if button_name in messages:
-        text = f"{messages[button_name][0]}, ОНО РАБОТАЕТ"
-    else:
-        text = f"{button_name}, ОНО РАБОТАЕТ"
+        # Менеджер конфигурации
+        self.config = ConfigManager()
 
-    # Информационное окно
-    QMessageBox.information(button.window(), "Информация", text)
+        # Инициализация состояния Safety mode из config.ini
+        self._init_safety_checkbox()
+
+        # Подключения сигналов
+        self.ui.SelectionButton_auto.clicked.connect(self.select_file_auto)
+        self.ui.SelectionButton_manual.clicked.connect(self.select_file_manual)
+        self.ui.checkBox_Safety_mode.stateChanged.connect(self._on_safety_checkbox_changed)
+        self.ui.loadBatton_manual.clicked.connect(self._on_manual_load_clicked)
+
+# - Safety mode -
+    def _init_safety_checkbox(self):
+
+        # Устанавливает начальное состояние чекбокса при запуске
+        # permanent disable = True -> галочка снята, окно не показывается
+        # permanent disable = False -> галочка установлена (temp сброшен в True)
+        
+        self.config.reset_temp_on_startup()
+
+        self.ui.checkBox_Safety_mode.blockSignals(True)
+        self.ui.checkBox_Safety_mode.setChecked(self.config.is_safety_enabled())
+        self.ui.checkBox_Safety_mode.blockSignals(False)
+
+    def _on_safety_checkbox_changed(self, state):
+
+        # state == 0 -> пользователь пытается СНЯТЬ галочку (показать диалог)
+        # state == 2 -> пользователь поставил галочку обратно
+
+        if state == 0:
+
+            # Если проверка отключена навсегда — просто обновляем temp, диалог показывать не нужно.
+            if self.config.is_safety_check_permanently_disabled():
+                self.config.set_safety_temp(False)
+                return
+
+            dialog = SafetyConfirmDialog(self)
+            
+            confirmed = dialog.exec() == SafetyConfirmDialog.Accepted
+
+            if confirmed:
+
+                # Успех - фиксируем в конфиге
+                self.config.set_safety_temp(False)
+
+            else:
+
+                # Возвращаем галочку и показываем "Ты не уверен в себе"
+                self.ui.checkBox_Safety_mode.blockSignals(True)
+                self.ui.checkBox_Safety_mode.setChecked(True)
+                self.ui.checkBox_Safety_mode.blockSignals(False)
+                
+                QMessageBox.information(self, "Результат", "Ты не уверен в себе")
+
+        else:
+
+            # Галочку вернули вручную - обновляем temp в TrueА
+            self.config.set_safety_temp(True)
+
+    # - Загрузка -
+    def _on_manual_load_clicked(self):
+
+        # Загрузка в Manual Mode с учётом Safety mode
+        result = validate()
+        if result == "examination":
+
+            # Safety mode выключен - предупреждаем пользователя
+            QMessageBox.warning(self, "Внимание", "Safety mode отключен. Загрузка выполняется без проверки!")
+
+        else:
+            QMessageBox.information(self, "Информация", f"Проверка пройдена: {result}\nЗагрузка началась.")
+
+            # Сюда реальную загрузку потом прикорячить
+
+    def select_file_auto(self):
+        
+        # Обработчик выбора файла для Auto Mode
+        full_path, display_path = FileSelector.select_firmware_file( self, "Выберите файл прошивки (Auto Mode)")
+
+        if full_path:
+            self.auto_file_path = full_path
+            self.ui.path_auto.setPlainText(display_path)
+
+    def select_file_manual(self):
+
+        # Обработчик выбора файла для Manual Mode
+        full_path, display_path = FileSelector.select_firmware_file( self, "Выберите файл прошивки (Manual Mode)")
+        
+        if full_path:
+            self.manual_file_path = full_path
+            self.ui.path_manual.setPlainText(display_path)
+
 
 def main():
 
     # Создание приложения и главного окна
     app = QApplication(sys.argv)
     
-    window = QMainWindow()
-    
-    # Создание объекта интерфейса
-    ui = Ui_MainWindow()
-    ui.setupUi(window) 
-    
-    # Список кнопок для подключения событий
-    buttons_to_connect = [
-        "SelectionButton_auto", 
-        "loadBatton_auto", 
-        "SelectionButton_manual", 
-        "loadBatton_manual", 
-        "toolButton_Modify_Config", 
-        "toolButton_Delete_Config", 
-        "toolButton_add_new_config"
-    ]
-
-    # Подключаем сигналы всех кнопок для отображения сообщений
-    for btn_name in buttons_to_connect:
-
-        # Ищем кнопку по имени в объекте UI
-        button = getattr(ui, btn_name) if hasattr(ui, btn_name) else None
-        
-        if button is not None:
-
-            # Используем functools.partial для связывания конкретного объекта кнопки с функцией.
-            # Это надежнее, чем lambda b=button, так как исключает проблемы с замыканиями в цикле.
-            button.clicked.connect(partial(handle_button_click, button))
-
+    window = EasyLoaderWindow()
+    window.setWindowTitle("UI-mode for EasyLoader")
     window.show()
-    
+
     sys.exit(app.exec())
 
 if __name__ == "__main__":
