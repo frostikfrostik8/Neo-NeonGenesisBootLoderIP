@@ -8,8 +8,8 @@ try:
     from file_selector import FileSelector
     from config_manager import ConfigManager
     from safety_dialog import SafetyConfirmDialog
-    
     from validating import validate
+    from sender import FirmwareSender
     
 except ImportError as e:
     print(f"Ошибка импорта UI: {e}")
@@ -42,6 +42,7 @@ class EasyLoaderWindow(QMainWindow):
         self.ui.SelectionButton_Manual.clicked.connect(self.select_file_manual)
         self.ui.checkBox_Safety_Mode_Manual.stateChanged.connect(self._on_safety_checkbox_changed)
         self.ui.loadBatton_Manual.clicked.connect(self._on_manual_load_clicked)
+        self.ui.loadBatton_Auto.clicked.connect(self._on_auto_load_clicked)
 
     # - IP Manual Mode -
 
@@ -170,17 +171,21 @@ class EasyLoaderWindow(QMainWindow):
     # - Загрузка -
     def _on_manual_load_clicked(self):
 
-        # Загрузка в Manual Mode с учётом Safety mode
-        result = validate()
-        if result == "examination":
+    # Загрузка в Manual Mode с учётом Safety mode и наличия конфига
+        FirmwareSender.send_manual(
+            parent=self,
+            file_path=self.manual_file_path,
+            dev_id=self.ui.plainTextID_Manual.toPlainText().strip(),
+            port=self.ui.plainTextPort_Manual.toPlainText().strip(),
+            ip=self.ui.plainTextIP_Manual.toPlainText().strip(),
+            ip_required=self.is_manual_ip_required,   
+            safety_enabled=self.ui.checkBox_Safety_Mode_Manual.isChecked(),
+        )
 
-            # Safety mode выключен - предупреждаем пользователя
-            QMessageBox.warning(self, "Внимание", "Safety mode отключен. Загрузка выполняется без проверки!")
+    def _on_auto_load_clicked(self):
 
-        else:
-            QMessageBox.information(self, "Информация", f"Проверка пройдена: {result}\nЗагрузка началась.")
-
-            # Сюда реальную загрузку потом прикорячить
+    # Загрузка в Auto Mode (пока пустышка)
+        FirmwareSender.send_auto(self, self.auto_file_path)
 
     def select_file_auto(self):
         
@@ -190,6 +195,7 @@ class EasyLoaderWindow(QMainWindow):
         if full_path:
             self.auto_file_path = full_path
             self.ui.path_Auto.setPlainText(display_path)
+
 
     def select_file_manual(self):
 
