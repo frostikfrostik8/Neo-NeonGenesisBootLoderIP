@@ -78,7 +78,7 @@
      <attribute name="title">
       <string>Auto Mode</string>
      </attribute>
-     <widget class="QPushButton" name="SelectionButton_auto">
+     <widget class="QPushButton" name="SelectionButton_Auto">
       <property name="geometry">
        <rect>
         <x>480</x>
@@ -100,7 +100,7 @@
        <bool>true</bool>
       </property>
      </widget>
-     <widget class="QPushButton" name="loadBatton_auto">
+     <widget class="QPushButton" name="loadBatton_Auto">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -119,7 +119,7 @@
        <bool>true</bool>
       </property>
      </widget>
-     <widget class="QPlainTextEdit" name="plainTextName_Auto">
+     <widget class="QPlainTextEdit" name="plainText_Name_Auto">
       <property name="geometry">
        <rect>
         <x>490</x>
@@ -141,7 +141,7 @@
        <string/>
       </property>
      </widget>
-     <widget class="QPlainTextEdit" name="plainTextType_Auto">
+     <widget class="QPlainTextEdit" name="plainText_Type_Auto">
       <property name="geometry">
        <rect>
         <x>490</x>
@@ -160,7 +160,7 @@
        <string/>
       </property>
      </widget>
-     <widget class="QPlainTextEdit" name="plainTextID_Auto">
+     <widget class="QPlainTextEdit" name="plainText_ID_Auto">
       <property name="geometry">
        <rect>
         <x>490</x>
@@ -179,7 +179,7 @@
        <string/>
       </property>
      </widget>
-     <widget class="QPlainTextEdit" name="plainTextPort_Auto">
+     <widget class="QPlainTextEdit" name="plainText_Port_Auto">
       <property name="geometry">
        <rect>
         <x>490</x>
@@ -198,7 +198,7 @@
        <string/>
       </property>
      </widget>
-     <widget class="QPlainTextEdit" name="plainTextIP_Auto">
+     <widget class="QPlainTextEdit" name="plainText_IP_Auto">
       <property name="geometry">
        <rect>
         <x>490</x>
@@ -217,7 +217,7 @@
        <string/>
       </property>
      </widget>
-     <widget class="QPlainTextEdit" name="path_auto">
+     <widget class="QPlainTextEdit" name="path_Auto">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -235,7 +235,7 @@
        <string>.../CCSEM3-RA-02_Esp32_WEV_BLE_19082025.bin</string>
       </property>
      </widget>
-     <widget class="QProgressBar" name="progressBar">
+     <widget class="QProgressBar" name="progressBar_Auto">
       <property name="geometry">
        <rect>
         <x>170</x>
@@ -248,7 +248,7 @@
        <number>24</number>
       </property>
      </widget>
-     <widget class="QLabel" name="label_4">
+     <widget class="QLabel" name="label_Name_Auto">
       <property name="geometry">
        <rect>
         <x>440</x>
@@ -266,7 +266,7 @@
        <string>Name</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_5">
+     <widget class="QLabel" name="label_Specifier_Auto">
       <property name="geometry">
        <rect>
         <x>430</x>
@@ -284,7 +284,7 @@
        <string>Specifier</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_6">
+     <widget class="QLabel" name="label_ID_Auto">
       <property name="geometry">
        <rect>
         <x>440</x>
@@ -302,7 +302,7 @@
        <string>ID</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_7">
+     <widget class="QLabel" name="label_Port_Auto">
       <property name="geometry">
        <rect>
         <x>440</x>
@@ -320,7 +320,7 @@
        <string>Port</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_8">
+     <widget class="QLabel" name="label_IP_Auto">
       <property name="geometry">
        <rect>
         <x>440</x>
@@ -338,7 +338,7 @@
        <string>IP</string>
       </property>
      </widget>
-     <widget class="QListView" name="StagesListView_manual_2">
+     <widget class="QListView" name="Stages_List_View_Auto">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -356,7 +356,7 @@
      <attribute name="title">
       <string>Manual Mode</string>
      </attribute>
-     <widget class="QPushButton" name="SelectionButton_manual">
+     <widget class="QPushButton" name="SelectionButton_Manual">
       <property name="geometry">
        <rect>
         <x>480</x>
@@ -378,7 +378,7 @@
        <bool>true</bool>
       </property>
      </widget>
-     <widget class="QPushButton" name="loadBatton_manual">
+     <widget class="QPushButton" name="loadBatton_Manual">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -397,7 +397,7 @@
        <bool>true</bool>
       </property>
      </widget>
-     <widget class="QPlainTextEdit" name="path_manual">
+     <widget class="QPlainTextEdit" name="path_Manual">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -415,7 +415,7 @@
        <string>.../CCSEM3-RA-02_Esp32_WEV_BLE_19082025.bin</string>
       </property>
      </widget>
-     <widget class="QProgressBar" name="progressBar_manual">
+     <widget class="QProgressBar" name="progress_Bar_Manual">
       <property name="geometry">
        <rect>
         <x>170</x>
@@ -485,7 +485,7 @@
        <string/>
       </property>
      </widget>
-     <widget class="QLabel" name="label">
+     <widget class="QLabel" name="label_ID_Manual">
       <property name="geometry">
        <rect>
         <x>450</x>
@@ -503,7 +503,7 @@
        <string>ID</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_2">
+     <widget class="QLabel" name="label_Port_Manual">
       <property name="geometry">
        <rect>
         <x>440</x>
@@ -521,7 +521,7 @@
        <string>Port</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_3">
+     <widget class="QLabel" name="label_IP_Manual">
       <property name="geometry">
        <rect>
         <x>550</x>
@@ -571,7 +571,7 @@
        <string>NO</string>
       </property>
      </widget>
-     <widget class="QCheckBox" name="checkBox_Safety_mode">
+     <widget class="QCheckBox" name="checkBox_Safety_Mode_Manual">
       <property name="geometry">
        <rect>
         <x>480</x>
@@ -604,7 +604,7 @@
        <bool>false</bool>
       </property>
      </widget>
-     <widget class="QListView" name="StagesListView_manual_3">
+     <widget class="QListView" name="Stages_List_View_Manual">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -622,7 +622,7 @@
      <attribute name="title">
       <string>Config</string>
      </attribute>
-     <widget class="QTableView" name="tableView">
+     <widget class="QTableView" name="Configuration_List_Config">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -644,7 +644,7 @@
        <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
       </property>
      </widget>
-     <widget class="QPlainTextEdit" name="plainTextPort_Config">
+     <widget class="QPlainTextEdit" name="plainText_Port_Config">
       <property name="geometry">
        <rect>
         <x>480</x>
@@ -663,7 +663,7 @@
        <string/>
       </property>
      </widget>
-     <widget class="QLabel" name="label_9">
+     <widget class="QLabel" name="label_Name_Config">
       <property name="geometry">
        <rect>
         <x>430</x>
@@ -681,7 +681,7 @@
        <string>Name</string>
       </property>
      </widget>
-     <widget class="QPlainTextEdit" name="plainTextIP_Config">
+     <widget class="QPlainTextEdit" name="plainText_IP_Config">
       <property name="geometry">
        <rect>
         <x>480</x>
@@ -700,7 +700,7 @@
        <string/>
       </property>
      </widget>
-     <widget class="QPlainTextEdit" name="plainTextSpecifier_Config">
+     <widget class="QPlainTextEdit" name="plainText_Specifier_Config">
       <property name="geometry">
        <rect>
         <x>480</x>
@@ -719,7 +719,7 @@
        <string/>
       </property>
      </widget>
-     <widget class="QLabel" name="label_11">
+     <widget class="QLabel" name="label_Specifier_Config">
       <property name="geometry">
        <rect>
         <x>420</x>
@@ -737,7 +737,7 @@
        <string>Specifier</string>
       </property>
      </widget>
-     <widget class="QPlainTextEdit" name="plainTextID_Config">
+     <widget class="QPlainTextEdit" name="plainText_ID_Config">
       <property name="geometry">
        <rect>
         <x>480</x>
@@ -756,7 +756,7 @@
        <string/>
       </property>
      </widget>
-     <widget class="QPlainTextEdit" name="plainTextName_Config">
+     <widget class="QPlainTextEdit" name="plainText_Name_Config">
       <property name="geometry">
        <rect>
         <x>480</x>
@@ -778,7 +778,7 @@
        <string/>
       </property>
      </widget>
-     <widget class="QLabel" name="label_12">
+     <widget class="QLabel" name="label_ID_Config">
       <property name="geometry">
        <rect>
         <x>430</x>
@@ -796,7 +796,7 @@
        <string>ID</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_13">
+     <widget class="QLabel" name="label_Port_Config">
       <property name="geometry">
        <rect>
         <x>430</x>
@@ -830,7 +830,7 @@
        <string>NO</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_10">
+     <widget class="QLabel" name="label_IP_Config">
       <property name="geometry">
        <rect>
         <x>550</x>
@@ -864,7 +864,7 @@
        <string>YES</string>
       </property>
      </widget>
-     <widget class="QPlainTextEdit" name="plainTextSpecifierOptional_Config">
+     <widget class="QPlainTextEdit" name="plainText_Specifier_Optional_Config">
       <property name="geometry">
        <rect>
         <x>480</x>
@@ -886,7 +886,7 @@
        <string/>
       </property>
      </widget>
-     <widget class="QLabel" name="label_14">
+     <widget class="QLabel" name="label_Specifier_2_Optional_Config">
       <property name="geometry">
        <rect>
         <x>490</x>
@@ -936,7 +936,7 @@
        <string>🗑️Delete</string>
       </property>
      </widget>
-     <widget class="QToolButton" name="toolButton_add_new_config__Accept">
+     <widget class="QToolButton" name="toolButton_Add_New_Config__Accept_Config">
       <property name="geometry">
        <rect>
         <x>530</x>

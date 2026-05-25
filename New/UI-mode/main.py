@@ -35,10 +35,10 @@ class EasyLoaderWindow(QMainWindow):
         self._init_safety_checkbox()
 
         # Подключения сигналов
-        self.ui.SelectionButton_auto.clicked.connect(self.select_file_auto)
-        self.ui.SelectionButton_manual.clicked.connect(self.select_file_manual)
-        self.ui.checkBox_Safety_mode.stateChanged.connect(self._on_safety_checkbox_changed)
-        self.ui.loadBatton_manual.clicked.connect(self._on_manual_load_clicked)
+        self.ui.SelectionButton_Auto.clicked.connect(self.select_file_auto)
+        self.ui.SelectionButton_Manual.clicked.connect(self.select_file_manual)
+        self.ui.checkBox_Safety_Mode_Manual.stateChanged.connect(self._on_safety_checkbox_changed)
+        self.ui.loadBatton_Manual.clicked.connect(self._on_manual_load_clicked)
 
 # - Safety mode -
     def _init_safety_checkbox(self):
@@ -49,9 +49,9 @@ class EasyLoaderWindow(QMainWindow):
         
         self.config.reset_temp_on_startup()
 
-        self.ui.checkBox_Safety_mode.blockSignals(True)
-        self.ui.checkBox_Safety_mode.setChecked(self.config.is_safety_enabled())
-        self.ui.checkBox_Safety_mode.blockSignals(False)
+        self.ui.checkBox_Safety_Mode_Manual.blockSignals(True)
+        self.ui.checkBox_Safety_Mode_Manual.setChecked(self.config.is_safety_enabled())
+        self.ui.checkBox_Safety_Mode_Manual.blockSignals(False)
 
     def _on_safety_checkbox_changed(self, state):
 
@@ -60,7 +60,7 @@ class EasyLoaderWindow(QMainWindow):
 
         if state == 0:
 
-            # Если проверка отключена навсегда — просто обновляем temp, диалог показывать не нужно.
+            # Если проверка отключена навсегда - просто обновляем temp, диалог показывать не нужно
             if self.config.is_safety_check_permanently_disabled():
                 self.config.set_safety_temp(False)
                 return
@@ -77,9 +77,9 @@ class EasyLoaderWindow(QMainWindow):
             else:
 
                 # Возвращаем галочку и показываем "Ты не уверен в себе"
-                self.ui.checkBox_Safety_mode.blockSignals(True)
-                self.ui.checkBox_Safety_mode.setChecked(True)
-                self.ui.checkBox_Safety_mode.blockSignals(False)
+                self.ui.checkBox_Safety_Mode_Manual.blockSignals(True)
+                self.ui.checkBox_Safety_Mode_Manual.setChecked(True)
+                self.ui.checkBox_Safety_Mode_Manual.blockSignals(False)
                 
                 QMessageBox.information(self, "Результат", "Ты не уверен в себе")
 
