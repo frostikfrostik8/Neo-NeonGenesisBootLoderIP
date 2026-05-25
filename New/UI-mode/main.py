@@ -34,11 +34,90 @@ class EasyLoaderWindow(QMainWindow):
         # Инициализация состояния Safety mode из config.ini
         self._init_safety_checkbox()
 
+        # Инициализация логики выбора IP
+        self._init_ip_checkboxes() 
+
         # Подключения сигналов
         self.ui.SelectionButton_Auto.clicked.connect(self.select_file_auto)
         self.ui.SelectionButton_Manual.clicked.connect(self.select_file_manual)
         self.ui.checkBox_Safety_Mode_Manual.stateChanged.connect(self._on_safety_checkbox_changed)
         self.ui.loadBatton_Manual.clicked.connect(self._on_manual_load_clicked)
+
+    # - IP Manual Mode -
+
+    def _init_ip_checkboxes(self):
+
+        # Инициализация чекбоксов IP, при запуске всегда активно NO
+
+        # Блокируем сигналы на время начальной настройки, чтобы не сработали обработчики
+
+        self.ui.checkBox_NO_IP.blockSignals(True)
+        self.ui.checkBox_Yes_IP.blockSignals(True)
+        
+        # По умолчанию всегда NO
+        self.ui.checkBox_NO_IP.setChecked(True)
+        self.ui.checkBox_Yes_IP.setChecked(False)
+        
+        self.ui.checkBox_NO_IP.blockSignals(False)
+        self.ui.checkBox_Yes_IP.blockSignals(False)
+        
+        # Флаг состояния: True = YES (IP нужен), False = NO (IP не нужен)
+        self.manual_ip_enabled = False
+        
+        # Поле ввода IP неактивно, так как выбрано NO
+        self.ui.plainTextIP_Manual.setEnabled(False)
+        
+        # Подключаем обработчики
+        self.ui.checkBox_Yes_IP.toggled.connect(self._on_yes_ip_toggled)
+        self.ui.checkBox_NO_IP.toggled.connect(self._on_no_ip_toggled)
+
+    def _on_yes_ip_toggled(self, checked: bool):
+
+        # Обработчик нажатия на YES
+        if checked:
+
+            # Снимаем NO
+            self.ui.checkBox_NO_IP.blockSignals(True)
+            self.ui.checkBox_NO_IP.setChecked(False)
+            self.ui.checkBox_NO_IP.blockSignals(False)
+            
+            self.manual_ip_enabled = True
+            self.ui.plainTextIP_Manual.setEnabled(True)
+        else:
+
+            # Если YES выключили (пользователь кликнул по нему повторно),
+            # NO должен включиться принудительно
+            self.ui.checkBox_NO_IP.blockSignals(True)
+            self.ui.checkBox_NO_IP.setChecked(True)
+            self.ui.checkBox_NO_IP.blockSignals(False)
+
+    def _on_no_ip_toggled(self, checked: bool):
+
+        # Обработчик нажатия на NO
+        if checked:
+
+            # Снимаем YES
+            self.ui.checkBox_Yes_IP.blockSignals(True)
+            self.ui.checkBox_Yes_IP.setChecked(False)
+            self.ui.checkBox_Yes_IP.blockSignals(False)
+            
+            self.manual_ip_enabled = False
+            self.ui.plainTextIP_Manual.setEnabled(False)
+            self.ui.plainTextIP_Manual.setPlainText("") # Очищстка при отказе от IP
+        else:
+
+            # Заприщает снимать NO, если YES не активен (возвращает галочку)
+            if not self.ui.checkBox_Yes_IP.isChecked():
+                self.ui.checkBox_NO_IP.blockSignals(True)
+                self.ui.checkBox_NO_IP.setChecked(True)
+                self.ui.checkBox_NO_IP.blockSignals(False)
+
+    @property
+    def is_manual_ip_required(self) -> bool:
+
+        # Свойство-флаг для удобной проверки в других частях кода
+        # Возвращает True, если в Manual Mode выбран YES (IP используется)
+        return self.manual_ip_enabled
 
 # - Safety mode -
     def _init_safety_checkbox(self):
@@ -110,7 +189,7 @@ class EasyLoaderWindow(QMainWindow):
 
         if full_path:
             self.auto_file_path = full_path
-            self.ui.path_auto.setPlainText(display_path)
+            self.ui.path_Auto.setPlainText(display_path)
 
     def select_file_manual(self):
 
@@ -119,7 +198,7 @@ class EasyLoaderWindow(QMainWindow):
         
         if full_path:
             self.manual_file_path = full_path
-            self.ui.path_manual.setPlainText(display_path)
+            self.ui.path_Manual.setPlainText(display_path)
 
 
 def main():
