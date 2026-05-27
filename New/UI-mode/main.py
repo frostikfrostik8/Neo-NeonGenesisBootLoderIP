@@ -338,10 +338,7 @@ class EasyLoaderWindow(QMainWindow):
             ip = "none"
 
         if not all([name, specifier, dev_id, port]):
-            QMessageBox.warning(
-                self, "Ошибка",
-                "Заполните обязательные поля: Name, Specifier, ID, Port"
-            )
+            QMessageBox.warning(self, "Ошибка","Заполните обязательные поля: Name, Specifier, ID, Port")
             return
 
         if self.is_modifying and self.current_editing_section:
