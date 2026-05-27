@@ -67,11 +67,10 @@ class FirmwareConfigManager:
             "ip": self.config.get(section, "ip", fallback="none"),
         }
 
-    def add_firmware(self, name: str, specifier: str, dev_id: str, port: str, 
-                     specifier_2: str = "none", ip: str = "none") -> str:
+    def add_firmware(self, name: str, specifier: str, dev_id: str, port: str, specifier_2: str = "none", ip: str = "none") -> str:
         
         # Добавляет новую прошивку и возвращает имя секции
-        # Находим следующий свободный номер
+        # Находит следующий свободный номер
         max_num = 0
         for section in self.config.sections():
             if section.startswith("firmware_"):
@@ -120,7 +119,20 @@ class FirmwareConfigManager:
             self.config.remove_section(section)
             self._save()
 
+    def reload(self):
+
+        # Перечитывает конфигурацию с диска
+        # Обязательно вызывает clear(), чтобы удалить записи,
+        # которые были удалены из файла
+        
+        self.config.clear()
+        if os.path.exists(self.CONFIG_FILE):
+            self.config.read(self.CONFIG_FILE, encoding="utf-8")
+
     def find_firmware_for_file(self, file_path: str) -> Tuple[Optional[Dict[str, str]], str]:
+
+        # Принудительное обновление данных перед поиском
+        self.reload()
 
         # Ищет конфиг для файла прошивки
         if not file_path or not os.path.isfile(file_path):

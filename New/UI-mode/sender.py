@@ -15,7 +15,7 @@ class FirmwareSender:
 
     def build_command(self, file_path: str, dev_id: str, port: str, ip: str | None) -> str:
 
-        # Собирает строку: EasyLoader [ID] [PORT] [FILE] [IP]
+        # Собирает строку EasyLoader [ID] [PORT] [FILE] [IP]
         exe_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             self.EXE_NAME
@@ -39,9 +39,10 @@ class FirmwareSender:
         return None
 
     def send_auto(self, parent, file_path: str, ui_fields: dict) -> bool:
+
         # Auto mode - ищет конфиг и заполняет поля UI.
         # Returns True если можно загружать, False если нет
-
+        
         if not file_path or not os.path.isfile(file_path):
             QMessageBox.critical(parent, "Ошибка", "Файл прошивки не выбран")
             return False
@@ -49,6 +50,7 @@ class FirmwareSender:
         firmware, match_type = self.fw_config.find_firmware_for_file(file_path)
 
         if match_type == "full":
+
             # Полное совпадение - заполняем поля
             ui_fields["name"].setPlainText(firmware.get("name", ""))
             ui_fields["specifier"].setPlainText(firmware.get("specifier", ""))
@@ -179,7 +181,7 @@ class FirmwareSender:
         box.setIcon(QMessageBox.Warning)
         box.setWindowTitle("⚠️ Прошивка не найдена")
         box.setText(
-            "Прошивка не найдена в базе конфигураций.\n"
+            "Прошивка не найдена в базе конфигураций\n"
             "Нажмите «Загрузить прошивку», чтобы запустить\n"
             "её на свой страх и риск"
         )

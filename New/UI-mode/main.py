@@ -32,6 +32,9 @@ class EasyLoaderWindow(QMainWindow):
         self.auto_file_path = ""
         self.manual_file_path = ""
 
+        # Эталонный конфиг для Auto Mode (запоминается при выборе файла)
+        self.auto_reference_config = None
+
         # Менеджер конфигурации
         self.config = ConfigManager()
 
@@ -208,9 +211,10 @@ class EasyLoaderWindow(QMainWindow):
     def _init_config_tab(self):
 
         # Инициализация вкладки Config
-        # Создаём список прошивок (заменяем QTableView на QListWidget для простоты)
+        # Создаётся список прошивок (заменяет QTableView на QListWidget для простоты)
         # В UIv1.py это Configuration_List_Config, но он QTableView
-        # Для простоты создадим новый QListWidget
+        # Для простоты создадил новый QListWidget
+        # Да костыли, и что? (нужно поправить, но лень)
         
         # Подключаем кнопки
         self.ui.toolButton_Delete_Config.clicked.connect(self._delete_config)
@@ -442,33 +446,157 @@ class EasyLoaderWindow(QMainWindow):
 
     def _on_auto_load_clicked(self):
 
-    # Загрузка в Auto Mode
-        FirmwareSender.send_auto(self, self.auto_file_path)
+        # Загрузка в Auto Mode с проверкой актуальности конфига и сравнением с эталоном
+        if not self.auto_file_path:
+            QMessageBox.warning(self, "Ошибка", "Файл не выбран.")
+            return
+
+        # повторно читает конфиг с диска на случий удалили/изменили
+        firmware, match_type = self.fw_config.find_firmware_for_file(self.auto_file_path)
+
+        if match_type != "full":
+            QMessageBox.critical(
+                self,
+                "❌ Конфиг изменился",
+                "Конфигурация для этого файла больше не найдена или стала недействительной\n"
+                "Пожалуйста, выберите файл заново"
+            )
+            self.ui.loadBatton_Auto.setEnabled(False)
+            self.auto_reference_config = None
+            return
+
+        # Считывает текущие значения из полей
+        current = {
+            "name": self.ui.plainText_Name_Auto.toPlainText().strip(),
+            "specifier": self.ui.plainText_Type_Auto.toPlainText().strip(),
+            "id": self.ui.plainText_ID_Auto.toPlainText().strip(),
+            "port": self.ui.plainText_Port_Auto.toPlainText().strip(),
+            "ip": self.ui.plainText_IP_Auto.toPlainText().strip(),
+        }
+
+        # Нормализует эталон для сравнения
+        ref_ip_raw = firmware.get("ip", "none")
+        reference = {
+            "name": firmware.get("name", "").strip(),
+            "specifier": firmware.get("specifier", "").strip(),
+            "id": firmware.get("id", "").strip(),
+            "port": firmware.get("port", "").strip(),
+            "ip": "" if ref_ip_raw.lower() == "none" else ref_ip_raw.strip(),
+        }
+
+        # Базовая валидация (обязательные поля)
+        if not current["id"] or not current["port"]:
+            QMessageBox.warning(self, "Неполные данные","Поля ID и Port обязательны для заполнения")
+            return
+
+        # Сравнивает с эталоном
+        changed = (current != reference)
+
+        # Формирует список изменений для отчёта пользователю
+        diff_lines = []
+        labels = {"name": "Name", "specifier": "Specifier", "id": "ID", "port": "Port", "ip": "IP"}
+        for key in ("name", "specifier", "id", "port", "ip"):
+            if current[key] != reference[key]:
+                diff_lines.append(f"  * {labels[key]}: «{reference[key]}» -> «{current[key]}»")
+
+    # Запуск 
+        if changed:
+            box = QMessageBox(self)
+            box.setIcon(QMessageBox.Warning)
+            box.setWindowTitle("⚠️ Рекомендация изменена ⚠️")
+            box.setText(
+                "Вы изменили рекомендованные параметры:\n\n"
+                + "\n".join(diff_lines)
+                + "\n\nЗапустить загрузку с новыми параметрами?"
+            )
+            box.setStandardButtons(QMessageBox.Cancel)
+            btn_run = box.addButton("Запустить", QMessageBox.AcceptRole)
+            box.setDefaultButton(btn_run)
+            box.exec()
+
+            if box.clickedButton() != btn_run:
+                print("[AUTO LOAD] Отменено пользователем")
+                return
+
+            # Запуск с измененными параметрами
+            tag = "AUTO MODE MODIFIED"
+            params = current
+        else:
+            QMessageBox.information(
+                self, "✅ Всё готово",
+                f"Конфиг найден: {reference['name']}\n"
+                f"Параметры совпадают с рекомендованными\n\n"
+                f"Запускаю загрузку..."
+            )
+
+            # Запуск с рекомендовыными параметрами
+            tag = "AUTO MODE SAFE"
+            params = reference
+
+        # Собирает и запускает команду
+        ip_for_cmd = params["ip"] if params["ip"] else None
+        command = self.sender.build_command(
+            file_path=self.auto_file_path,
+            dev_id=params["id"],
+            port=params["port"],
+            ip=ip_for_cmd
+        )
+        self.sender._run_command(command, tag=tag)
 
     # - Auto Mode с проверкой конфига -
 
     def select_file_auto(self):
 
-        # Обработчик выбора файла для Auto Mode с проверкой конфига
-        full_path, display_path = FileSelector.select_firmware_file(
-            self, "Выберите файл прошивки (Auto Mode)"
-        )
-        
-        if full_path:
-            self.auto_file_path = full_path
-            self.ui.path_Auto.setPlainText(display_path)
-            
-            # Ищет конфиг и заполняем поля
-            ui_fields = {
-                "name": self.ui.plainText_Name_Auto,
-                "specifier": self.ui.plainText_Type_Auto,  # Используем Type как Specifier (забыл переименовать)
-                "id": self.ui.plainText_ID_Auto,
-                "port": self.ui.plainText_Port_Auto,
-                "ip": self.ui.plainText_IP_Auto,
-            }
-            
-            can_load = self.sender.send_auto(self, full_path, ui_fields)
-            self.ui.loadBatton_Auto.setEnabled(can_load)
+        # Выбор файла для Auto Mode + поиск конфига + сохранение эталона
+        full_path, display_path = FileSelector.select_firmware_file(self, "Выберите файл прошивки (Auto Mode)")
+
+        if not full_path:
+            return
+
+        self.auto_file_path = full_path
+        self.ui.path_Auto.setPlainText(display_path)
+
+        # Ищет конфиг (с автоматическим reload внутри find_firmware_for_file)
+        firmware, match_type = self.fw_config.find_firmware_for_file(full_path)
+
+        if match_type == "full":
+
+            # Сохраняет эталон
+            self.auto_reference_config = firmware
+
+            # Заполняет поля рекомендованными значениями
+            self.ui.plainText_Name_Auto.setPlainText(firmware.get("name", ""))
+            self.ui.plainText_Type_Auto.setPlainText(firmware.get("specifier", ""))
+            self.ui.plainText_ID_Auto.setPlainText(firmware.get("id", ""))
+            self.ui.plainText_Port_Auto.setPlainText(firmware.get("port", ""))
+
+            ip_value = firmware.get("ip", "none")
+            self.ui.plainText_IP_Auto.setPlainText("" if ip_value.lower() == "none" else ip_value)
+
+            QMessageBox.information(
+                self, "✅ Конфиг найден",
+                "Прошивка найдена в базе\n"
+                "Вы можете изменить параметры перед загрузкой"
+            )
+            self.ui.loadBatton_Auto.setEnabled(True)
+
+        elif match_type == "partial":
+            self.auto_reference_config = None
+            QMessageBox.warning(
+                self, "⚠️ Неполное совпадение",
+                "Найдено частичное совпадение конфигурации\n"
+                "Загрузка в Auto Mode запрещена"
+            )
+            self.ui.loadBatton_Auto.setEnabled(False)
+
+        else:
+            self.auto_reference_config = None
+            QMessageBox.critical(
+                self, "❌ Не найдено",
+                "Файл конфигурации прошивки не найден\n"
+                "Загрузка в Auto Mode запрещена"
+            )
+            self.ui.loadBatton_Auto.setEnabled(False)
 
 
     # - Manual Mode -
