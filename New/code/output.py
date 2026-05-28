@@ -16,21 +16,21 @@ class logger:
         pass
 
     #For write to console and to Log file
-    def log(self, s):
-        print(s)
-        print(s, file = self.LogUpdate)
+    def log(self, s, flush=True):
+        print(s, flush=True)
+        print(s, file = self.LogUpdate, flush=True)
 
     def logfile(self, s):
-        print(s, file = self.LogUpdate)
+        print(s, file = self.LogUpdate, flush=True)
 
     def printBanner(self):
-        print("\nPlease call application with correct arguments!")
-        print(colored("Serial port version:", 'grey'))
-        print("Structure:\t" + colored("EasyLoader", 'green') + colored(" [ID]", 'yellow') + colored(" [PORT]", 'blue') + colored(" [FILE]", 'red'))
-        print("Example:\t" + colored("EasyLoader", 'green') + colored(" 503", 'yellow') + colored(" /dev/ttyS0", 'blue') + colored(" ChS-RA-Tata.bin", 'red'))
-        print(colored("or UDP version:", 'grey'))
-        print("Structure:\t" + colored("EasyLoader", 'green') + colored(" [ID]", 'yellow') + colored(" [PORT]", 'blue') + colored(" [FILE]", 'red') + colored(" [IP]", 'light_cyan'))
-        print("Example:\t" + colored("EasyLoader", 'green') + colored(" 3", 'yellow') + colored(" 8007", 'blue') + colored(" ChS-RA-Tata_final.bin", 'red') + colored(" 192.168.1.20\n", 'light_cyan'))
+        print("\nPlease call application with correct arguments!", flush=True)
+        print(colored("Serial port version:", 'grey'), flush=True)
+        print("Structure:\t" + colored("EasyLoader", 'green') + colored(" [ID]", 'yellow') + colored(" [PORT]", 'blue') + colored(" [FILE]", 'red'), flush=True)
+        print("Example:\t" + colored("EasyLoader", 'green') + colored(" 503", 'yellow') + colored(" /dev/ttyS0", 'blue') + colored(" ChS-RA-Tata.bin", 'red'), flush=True)
+        print(colored("or UDP version:", 'grey'), flush=True)
+        print("Structure:\t" + colored("EasyLoader", 'green') + colored(" [ID]", 'yellow') + colored(" [PORT]", 'blue') + colored(" [FILE]", 'red') + colored(" [IP]", 'light_cyan'), flush=True)
+        print("Example:\t" + colored("EasyLoader", 'green') + colored(" 3", 'yellow') + colored(" 8007", 'blue') + colored(" ChS-RA-Tata_final.bin", 'red') + colored(" 192.168.1.20\n", 'light_cyan'), flush=True)
 
     def printDate(self):
         current_date = datetime.datetime.utcnow()
@@ -77,11 +77,11 @@ class logger:
         if((id_periph & 0xF0) == 0x80): periph_device = "LCSC-{}".format(id_periph & 0x0F)
 
         if(id_periph > 0):
-            print("Update device:\t" + periph_device + " by " + main_device)
-            print("Update device:\t" + periph_device + " by " + main_device, file=self.LogUpdate)
+            print("Update device:\t" + periph_device + " by " + main_device, flush=True)
+            print("Update device:\t" + periph_device + " by " + main_device, file=self.LogUpdate, flush=True)
         else:
-            print("Update device:\t" + main_device)
-            print("Update device:\t" + main_device, file=self.LogUpdate)
+            print("Update device:\t" + main_device, flush=True)
+            print("Update device:\t" + main_device, file=self.LogUpdate, flush=True)
 
     def printSize(self, size_programm, size_buffer, size_block):
         #File size in size_block bytes
@@ -89,7 +89,7 @@ class logger:
         self.log("File size {} blocks".format(size_buffer) + " (block = {} kBytes)".format(size_block / 1024))
 
     def clearProgress(self):
-        print("\r\b\r\b\r\b\r\b\r\b\r\b\r\b\r\b\r\b")
+        print("\r\b\r\b\r\b\r\b\r\b\r\b\r\b\r\b\r\b", flush=True)
 
     def progressBar(self, completion):
         top = "__" #"▁▁"
@@ -114,62 +114,62 @@ class logger:
 
         if completion < 1: print("Progress: {}% ".format(int(completion*100)))
         else: self.log("Progress: {}% ".format(int(completion*100)))
-        print(top)
-        print(progressBar[0:1] + colored(progressBar[1:(self.Width + 1)], 'green') + progressBar[(self.Width + 1):(self.Width + 2)])
-        print(bottom)
+        print(top, flush=True)
+        print(progressBar[0:1] + colored(progressBar[1:(self.Width + 1)], 'green') + progressBar[(self.Width + 1):(self.Width + 2)], flush=True)
+        print(bottom, flush=True)
 
     def clearProgress(self):
-        print("\r\b\r\b\r\b\r\b\r\b\r\b\r\b\r\b")
+        print("\r\b\r\b\r\b\r\b\r\b\r\b\r\b\r\b", flush=True)
     
     def printDefault(self):
-        print("State [Deafault]" + colored(" ✅", 'green'))
-        print("State [Deafault]", file=self.LogUpdate)
+        print("State [Deafault]" + colored(" ✅", 'green'), flush=True)
+        print("State [Deafault]", file=self.LogUpdate, flush=True)
 
     def printErased(self, state):
         if state == 0:
-            print("State [Erased successfully]" + colored(" ✅", 'green'))
-            print("State [Erased successfully]", file=self.LogUpdate)
+            print("State [Erased successfully]" + colored(" ✅", 'green'), flush=True)
+            print("State [Erased successfully]", file=self.LogUpdate, flush=True)
         else:
-            print("State [Erased failed]" + colored(" ❎", 'red'))
-            print("State [Erased failed]", file=self.LogUpdate)
+            print("State [Erased failed]" + colored(" ❎", 'red'), flush=True)
+            print("State [Erased failed]", file=self.LogUpdate, flush=True)
 
     def printWritten(self, state, number, log_flag):
 
         if state == 0:
-            print("State [Written block {}]".format(number))
-            if log_flag != 0: print("State [Written block {}]".format(number), file=self.LogUpdate)
+            print("State [Written block {}]".format(number), flush=True)
+            if log_flag != 0: print("State [Written block {}]".format(number), file=self.LogUpdate, flush=True)
         else:
-            print("State [Written failed]" + colored(" ❎", 'red'))
-            print("State [Written failed]", file=self.LogUpdate)
+            print("State [Written failed]" + colored(" ❎", 'red'), flush=True)
+            print("State [Written failed]", file=self.LogUpdate, flush=True)
 
     def printEEPROM(self, state):
 
         if state == 0:
-            print("State [Written EEPROM successfully]" + colored(" ✅", 'green'))
-            print("State [Written EEPROM successfully]", file=self.LogUpdate)
+            print("State [Written EEPROM successfully]" + colored(" ✅", 'green'), flush=True)
+            print("State [Written EEPROM successfully]", file=self.LogUpdate, flush=True)
         else:
-            print("State [Written EEPROM failed]" + colored(" ❎", 'red'))
-            print("State [Written EEPROM failed]", file=self.LogUpdate)
+            print("State [Written EEPROM failed]" + colored(" ❎", 'red'), flush=True)
+            print("State [Written EEPROM failed]", file=self.LogUpdate, flush=True)
 
     def printChecked(self, state):
 
         if state == 0:
-            print("State [Checked successfully]" + colored(" ✅", 'green'))
-            print("State [Checked successfully]", file=self.LogUpdate)
+            print("State [Checked successfully]" + colored(" ✅", 'green'), flush=True)
+            print("State [Checked successfully]", file=self.LogUpdate, flush=True)
         else:
-            print("State [Checked failed]" + colored(" ❎", 'red'))
-            print("State [Checked failed]", file=self.LogUpdate)
+            print("State [Checked failed]" + colored(" ❎", 'red'), flush=True)
+            print("State [Checked failed]", file=self.LogUpdate, flush=True)
 
     def printVersion(self, state, text):
 
         if state == 0:
-            print("State [Receive version]")
-            print(text)
+            print("State [Receive version]", flush=True)
+            print(text, flush=True)
         else:
-            print("State [Received version]" + colored(" ✅", 'green'))
-            print("State [Received version]", file=self.LogUpdate)
-            print(text)
-            print(text, file=self.LogUpdate)
+            print("State [Received version]" + colored(" ✅", 'green'), flush=True)
+            print("State [Received version]", file=self.LogUpdate, flush=True)
+            print(text, flush=True)
+            print(text, file=self.LogUpdate, flush=True)
 
     def printResetDevice(self, id, id_periph):
         main_device = ""
