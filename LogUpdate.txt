@@ -253,3 +253,46 @@ State [Checked successfully]
 
 Transmitted: 0x030000020001281e
 State [Deafault]
+
+----------- Update parameters -----------
+
+Update device:	LAN-RA
+Update date:	2026-05-28 10:58:10
+
+IP		= 192.168.1.35
+Port		= 8007
+File name	= c:\work\Neo-NeonGenesisBootLoderIP\Old\Firmware\LAN-RAv2.2_1.0.0_12.11.25_MASTER.bin
+
+File size 107796 Bytes
+File size 211 blocks (block = 0.5 kBytes)
+
+---------- Try to reset device ----------
+
+Reset LAN-RA
+
+Transmitted by UDP: 0x0f06010400010919
+Received by UDP: 0x0f06010400010919
+
+--------- Try to update device ----------
+
+State [Received version]
+UdpLoader for STM32F407 version 0.4 dated 14.10.2025 (LAN_RA)
+
+Transmitted by UDP: 0x0f0000020001284b
+State [Deafault]
+
+Transmitted by UDP: 0x0f01000240007c8b
+
+Timeout
+
+State [Erased successfully]
+
+Transmitted by UDP: 0x...
+State [Written block 211]
+Progress: 100% 
+
+Transmitted by UDP: 0x0f03000249041d16
+State [Checked successfully]
+
+Transmitted by UDP: 0x0f0000020001284b
+State [Deafault]
