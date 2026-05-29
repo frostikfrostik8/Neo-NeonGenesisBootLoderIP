@@ -15,26 +15,42 @@ class ConfigManager:
     KEY_TEMP = "enabled_temp"
     KEY_PERMANENT = "check_disabled_permanently"
 
+    # Для работы с EL
+
+    SECTION_EASYLOADER = "EasyLoader"
+    KEY_EXE_NAME = "exe_name"
+
     def __init__(self):
         self.config = configparser.ConfigParser()
         self._load_or_create()
 
     def _load_or_create(self):
-        
-        #Загружает config.ini или создаёт со значениями по умолчанию
         if not os.path.exists(self.CONFIG_FILE):
             self.config[self.SECTION] = {
                 self.KEY_TEMP: "True",
                 self.KEY_PERMANENT: "False"
             }
+            self.config[self.SECTION_EASYLOADER] = {
+                self.KEY_EXE_NAME: "EasyLoader.exe"
+            }
             self._save()
         else:
             self.config.read(self.CONFIG_FILE, encoding="utf-8")
-
-            # Гарантирует наличие секции
             if self.SECTION not in self.config:
                 self.config[self.SECTION] = {}
-                self._save()
+            if self.SECTION_EASYLOADER not in self.config:
+                self.config[self.SECTION_EASYLOADER] = {self.KEY_EXE_NAME: "EasyLoader.exe"}
+            self._save()
+
+    # Нужно для EL
+    # Возвращает имя исполняемого файла EasyLoader из конфига
+    def get_exe_name(self) -> str:
+        
+        return self.config.get(
+            self.SECTION_EASYLOADER,
+            self.KEY_EXE_NAME,
+            fallback="EasyLoader.exe"
+        )
 
     def _save(self):
         with open(self.CONFIG_FILE, "w", encoding="utf-8") as f:
@@ -84,3 +100,4 @@ class ConfigManager:
         if value:
             self.config[self.SECTION][self.KEY_TEMP] = "False"
         self._save()
+    

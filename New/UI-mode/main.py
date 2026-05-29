@@ -3,6 +3,7 @@ import os
 from typing import Optional, Dict
 from PySide6.QtWidgets import (QApplication, QMainWindow, QMessageBox,QListWidget, QListWidgetItem, QAbstractItemView)
 from PySide6.QtCore import Qt, QStringListModel, QItemSelectionModel
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,QFont, QFontDatabase, QGradient, QIcon,QImage, QKeySequence, QLinearGradient, QPainter,QPalette, QPixmap, QRadialGradient, QTransform,QStandardItemModel, QStandardItem)
 from functools import partial
 
 try:
@@ -14,6 +15,7 @@ try:
     from validating import validate
     from firmware_config_manager import FirmwareConfigManager
     from sender import FirmwareSender
+    from loader_thread import LoaderThread
 
 except ImportError as e:
     print(f"Ошибка импорта: {e}")
@@ -37,24 +39,34 @@ class EasyLoaderWindow(QMainWindow):
 
         # Менеджер конфигурации
         self.config = ConfigManager()
+        self.fw_config = FirmwareConfigManager()
+        self.sender = FirmwareSender(self.config)
+
+        # Ссылка на активный поток чтобы не собрался сборщиком мусора
+        self.loader_thread: Optional[LoaderThread] = None
+        self.current_mode: str = ""  # "auto" или "manual"
+
+        # Максимальный прогресс (защита от отката)
+        self.max_progress = 0
+
+        # Модели для логов
+        self.auto_log_model = QStandardItemModel()
+        self.manual_log_model = QStandardItemModel()
+        self.ui.Stages_List_View_Auto.setModel(self.auto_log_model)
+        self.ui.Stages_List_View_Manual.setModel(self.manual_log_model)
+
 
         # Инициализация состояния Safety mode из config.ini
-        self._init_safety_checkbox()
-
         # Инициализация логики выбора IP
+        # Инициализация вкладки Config
+        self._init_safety_checkbox()
         self._init_ip_checkboxes()
         self._init_config_ip_checkboxes()
-
-        # Менеджер конфигов прошивок
-        self.fw_config = FirmwareConfigManager()
-        self.sender = FirmwareSender()
+        self._init_config_tab()
         
         # Состояние для вкладки Config
         self.current_editing_section = None
         self.is_modifying = False
-        
-        # Инициализация вкладки Config
-        self._init_config_tab()
 
         # Подключения сигналов
         self.ui.SelectionButton_Auto.clicked.connect(self.select_file_auto)
@@ -62,6 +74,80 @@ class EasyLoaderWindow(QMainWindow):
         self.ui.checkBox_Safety_Mode_Manual.stateChanged.connect(self._on_safety_checkbox_changed)
         self.ui.loadBatton_Manual.clicked.connect(self._on_manual_load_clicked)
         self.ui.loadBatton_Auto.clicked.connect(self._on_auto_load_clicked)
+
+    # --- Запуск загрузчика ---
+
+    def _start_loader(self, parent, args: list, tag: str):
+
+        # Общий метод запуска EasyLoader в отдельном потоке
+        if self.loader_thread and self.loader_thread.isRunning():
+            QMessageBox.warning(self, "Занят", "Предыдущая загрузка ещё идёт.")
+            return
+
+        # Определяет режим
+        self.current_mode = "auto" if parent == self and tag.startswith("AUTO") else "manual"
+
+        # Определяет целевые виджеты
+        if self.current_mode == "auto":
+            progress_bar = self.ui.progressBar_Auto
+            log_model = self.auto_log_model
+            load_button = self.ui.loadBatton_Auto
+        else:
+            progress_bar = self.ui.progress_Bar_Manual
+            log_model = self.manual_log_model
+            load_button = self.ui.loadBatton_Manual
+
+        # Сброс состояния
+        self.max_progress = 0
+        progress_bar.setValue(0)
+        log_model.clear()
+        load_button.setEnabled(False)
+
+        # Создаёт и запускает поток
+        exe_name = self.config.get_exe_name()
+        self.loader_thread = LoaderThread(exe_name, args)
+
+        self.loader_thread.log_received.connect(lambda line: self._on_log_received(line, log_model))
+        self.loader_thread.progress_received.connect(lambda p: self._on_progress_received(p, progress_bar))
+        self.loader_thread.process_finished.connect(lambda: self._on_process_finished(load_button))
+        self.loader_thread.error_occurred.connect(self._on_error)
+
+        print("=" * 60)
+        print(f"[{tag}] Запуск: {exe_name} {' '.join(args)}")
+        print("=" * 60)
+
+        self.loader_thread.start()
+
+    def _on_log_received(self, line: str, model: QStandardItemModel):
+
+        # Добавление строки лога в QListView
+        item = QStandardItem(line)
+        item.setEditable(False)
+        model.appendRow(item)
+
+        # Прокрутка в конец
+        list_view = self.ui.Stages_List_View_Auto if model == self.auto_log_model else self.ui.Stages_List_View_Manual
+        list_view.scrollToBottom()
+
+    def _on_progress_received(self, progress: int, progress_bar):
+
+        # Обновление прогресс бара
+        if progress > self.max_progress:
+            self.max_progress = progress
+            progress_bar.setValue(self.max_progress)
+
+    def _on_process_finished(self, load_button):
+
+        # Завершение процесса и разблокировка кнопки
+        load_button.setEnabled(True)
+        print("[INFO] Процесс EasyLoader завершён")
+        QMessageBox.information(self, "Завершено", "Загрузка завершена")
+
+    def _on_error(self, error_text: str):
+
+        # Обработка ошибок запуска
+        QMessageBox.critical(self, "Ошибка", error_text)
+        print(f"[ERROR] {error_text}")
 
     # - IP Manual Mode -
 
@@ -105,7 +191,7 @@ class EasyLoaderWindow(QMainWindow):
             self.ui.plainTextIP_Manual.setEnabled(True)
         else:
 
-            # Если YES выключили (пользователь кликнул по нему повторно),
+            # Если YES выключили (пользователь кликнул по нему повторно)
             # NO должен включиться принудительно
             self.ui.checkBox_NO_IP.blockSignals(True)
             self.ui.checkBox_NO_IP.setChecked(True)
@@ -359,7 +445,7 @@ class EasyLoaderWindow(QMainWindow):
 
     def _clear_config_fields(self):
 
-        # Очистить поля ввода конфига и сбросить IP-чекбоксы в NO
+        # Очистить поля ввода конфига и сбросить IP чекбоксы в NO
         self.ui.plainText_Name_Config.clear()
         self.ui.plainText_Specifier_Config.clear()
         self.ui.plainText_ID_Config.clear()
@@ -367,7 +453,7 @@ class EasyLoaderWindow(QMainWindow):
         self.ui.plainText_Specifier_Optional_Config.clear()
         self.ui.plainText_IP_Config.clear()
 
-        # Сброс IP-чекбоксов в NO
+        # Сброс IP чекбоксов в NO
         self.ui.checkBox_NO_IP_2.blockSignals(True)
         self.ui.checkBox_Yes_IP_2.blockSignals(True)
         self.ui.checkBox_NO_IP_2.setChecked(True)
@@ -445,27 +531,18 @@ class EasyLoaderWindow(QMainWindow):
         )
 
     def _on_auto_load_clicked(self):
-
-        # Загрузка в Auto Mode с проверкой актуальности конфига и сравнением с эталоном
         if not self.auto_file_path:
-            QMessageBox.warning(self, "Ошибка", "Файл не выбран.")
+            QMessageBox.warning(self, "Ошибка", "Файл не выбран")
             return
 
-        # повторно читает конфиг с диска на случий удалили/изменили
         firmware, match_type = self.fw_config.find_firmware_for_file(self.auto_file_path)
 
         if match_type != "full":
-            QMessageBox.critical(
-                self,
-                "❌ Конфиг изменился",
-                "Конфигурация для этого файла больше не найдена или стала недействительной\n"
-                "Пожалуйста, выберите файл заново"
-            )
+            QMessageBox.critical(self, "❌ Конфиг изменился","Конфиг больше не найден. Выберите файл заново")
             self.ui.loadBatton_Auto.setEnabled(False)
             self.auto_reference_config = None
             return
 
-        # Считывает текущие значения из полей
         current = {
             "name": self.ui.plainText_Name_Auto.toPlainText().strip(),
             "specifier": self.ui.plainText_Type_Auto.toPlainText().strip(),
@@ -474,7 +551,6 @@ class EasyLoaderWindow(QMainWindow):
             "ip": self.ui.plainText_IP_Auto.toPlainText().strip(),
         }
 
-        # Нормализует эталон для сравнения
         ref_ip_raw = firmware.get("ip", "none")
         reference = {
             "name": firmware.get("name", "").strip(),
@@ -484,26 +560,21 @@ class EasyLoaderWindow(QMainWindow):
             "ip": "" if ref_ip_raw.lower() == "none" else ref_ip_raw.strip(),
         }
 
-        # Базовая валидация (обязательные поля)
         if not current["id"] or not current["port"]:
-            QMessageBox.warning(self, "Неполные данные","Поля ID и Port обязательны для заполнения")
+            QMessageBox.warning(self, "Неполные данные", "ID и Port обязательны ")
             return
 
-        # Сравнивает с эталоном
         changed = (current != reference)
-
-        # Формирует список изменений для отчёта пользователю
-        diff_lines = []
         labels = {"name": "Name", "specifier": "Specifier", "id": "ID", "port": "Port", "ip": "IP"}
-        for key in ("name", "specifier", "id", "port", "ip"):
-            if current[key] != reference[key]:
-                diff_lines.append(f"  * {labels[key]}: «{reference[key]}» -> «{current[key]}»")
+        diff_lines = [
+            f"  📎 {labels[k]}: <<{reference[k]}>> -> <<{current[k]}>>"
+            for k in ("name", "specifier", "id", "port", "ip") if current[k] != reference[k]
+        ]
 
-    # Запуск 
         if changed:
             box = QMessageBox(self)
             box.setIcon(QMessageBox.Warning)
-            box.setWindowTitle("⚠️ Рекомендация изменена ⚠️")
+            box.setWindowTitle("⚠️ Рекомендация изменена")
             box.setText(
                 "Вы изменили рекомендованные параметры:\n\n"
                 + "\n".join(diff_lines)
@@ -513,96 +584,56 @@ class EasyLoaderWindow(QMainWindow):
             btn_run = box.addButton("Запустить", QMessageBox.AcceptRole)
             box.setDefaultButton(btn_run)
             box.exec()
-
             if box.clickedButton() != btn_run:
-                print("[AUTO LOAD] Отменено пользователем")
                 return
-
-            # Запуск с измененными параметрами
             tag = "AUTO MODE MODIFIED"
             params = current
         else:
             QMessageBox.information(
-                self, "✅ Всё готово",
-                f"Конфиг найден: {reference['name']}\n"
-                f"Параметры совпадают с рекомендованными\n\n"
-                f"Запускаю загрузку..."
-            )
-
-            # Запуск с рекомендовыными параметрами
+                self, "✅ Всё готово",f"Конфиг: {reference['name']}\nЗапускаю...")
             tag = "AUTO MODE SAFE"
             params = reference
 
-        # Собирает и запускает команду
         ip_for_cmd = params["ip"] if params["ip"] else None
-        command = self.sender.build_command(
-            file_path=self.auto_file_path,
-            dev_id=params["id"],
-            port=params["port"],
-            ip=ip_for_cmd
-        )
-        self.sender._run_command(command, tag=tag)
+        args = self.sender.build_command_args(self.auto_file_path, params["id"], params["port"], ip_for_cmd)
+        self._start_loader(self, args, tag)
 
     # - Auto Mode с проверкой конфига -
 
     def select_file_auto(self):
 
-        # Выбор файла для Auto Mode + поиск конфига + сохранение эталона
         full_path, display_path = FileSelector.select_firmware_file(self, "Выберите файл прошивки (Auto Mode)")
-
         if not full_path:
             return
 
         self.auto_file_path = full_path
         self.ui.path_Auto.setPlainText(display_path)
 
-        # Ищет конфиг (с автоматическим reload внутри find_firmware_for_file)
         firmware, match_type = self.fw_config.find_firmware_for_file(full_path)
 
         if match_type == "full":
-
-            # Сохраняет эталон
             self.auto_reference_config = firmware
-
-            # Заполняет поля рекомендованными значениями
             self.ui.plainText_Name_Auto.setPlainText(firmware.get("name", ""))
             self.ui.plainText_Type_Auto.setPlainText(firmware.get("specifier", ""))
             self.ui.plainText_ID_Auto.setPlainText(firmware.get("id", ""))
             self.ui.plainText_Port_Auto.setPlainText(firmware.get("port", ""))
-
             ip_value = firmware.get("ip", "none")
             self.ui.plainText_IP_Auto.setPlainText("" if ip_value.lower() == "none" else ip_value)
-
-            QMessageBox.information(
-                self, "✅ Конфиг найден",
-                "Прошивка найдена в базе\n"
-                "Вы можете изменить параметры перед загрузкой"
-            )
+            QMessageBox.information(self, "✅ Конфиг найден","Прошивка найдена. Параметры можно изменить")
             self.ui.loadBatton_Auto.setEnabled(True)
-
         elif match_type == "partial":
             self.auto_reference_config = None
-            QMessageBox.warning(
-                self, "⚠️ Неполное совпадение",
-                "Найдено частичное совпадение конфигурации\n"
-                "Загрузка в Auto Mode запрещена"
-            )
+            QMessageBox.warning(self, "⚠️ Неполное совпадение", "Загрузка запрещена")
             self.ui.loadBatton_Auto.setEnabled(False)
-
         else:
             self.auto_reference_config = None
-            QMessageBox.critical(
-                self, "❌ Не найдено",
-                "Файл конфигурации прошивки не найден\n"
-                "Загрузка в Auto Mode запрещена"
-            )
+            QMessageBox.critical(self, "❌ Не найдено", "Конфиг не найден. Загрузка запрещена")
             self.ui.loadBatton_Auto.setEnabled(False)
 
 
     # - Manual Mode -
     def _on_manual_load_clicked(self):
 
-        # Загрузка в Manual Mode с проверкой конфига
         self.sender.send_manual(
             parent=self,
             file_path=self.manual_file_path,
@@ -611,13 +642,14 @@ class EasyLoaderWindow(QMainWindow):
             ip=self.ui.plainTextIP_Manual.toPlainText().strip(),
             ip_required=self.is_manual_ip_required,
             safety_enabled=self.ui.checkBox_Safety_Mode_Manual.isChecked(),
+            on_run=lambda parent, args, tag: self._start_loader(parent, args, f"MANUAL {tag}")
         )
 
     def select_file_manual(self):
 
-        # Обработчик выбора файла для Manual Mode
-        full_path, display_path = FileSelector.select_firmware_file( self, "Выберите файл прошивки (Manual Mode)")
-        
+        full_path, display_path = FileSelector.select_firmware_file(
+            self, "Выберите файл прошивки (Manual Mode)"
+        )
         if full_path:
             self.manual_file_path = full_path
             self.ui.path_Manual.setPlainText(display_path)
