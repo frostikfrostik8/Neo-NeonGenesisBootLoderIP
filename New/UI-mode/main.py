@@ -397,7 +397,7 @@ class EasyLoaderWindow(QMainWindow):
 
     def _on_safety_checkbox_changed(self, state):
 
-        # state == 0 -> пользователь пытается СНЯТЬ галочку (показать диалог)
+        # state == 0 -> пользователь пытается снять галочку (показать диалог)
         # state == 2 -> пользователь поставил галочку обратно
 
         if state == 0:
