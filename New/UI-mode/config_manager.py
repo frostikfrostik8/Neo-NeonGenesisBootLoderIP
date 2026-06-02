@@ -23,6 +23,7 @@ class ConfigManager:
     KEY_EXE_NAME = "exe_name"
 
     def __init__(self):
+        self.CONFIG_FILE = get_resource_path("config.ini")
         self.config = configparser.ConfigParser()
         self._load_or_create()
 
@@ -41,7 +42,9 @@ class ConfigManager:
             if self.SECTION not in self.config:
                 self.config[self.SECTION] = {}
             if self.SECTION_EASYLOADER not in self.config:
-                self.config[self.SECTION_EASYLOADER] = {self.KEY_EXE_NAME: "EasyLoader.exe"}
+                self.config[self.SECTION_EASYLOADER] = {
+                    self.KEY_EXE_NAME: "EasyLoader.exe"
+                }
             self._save()
 
     # Нужно для EL
@@ -64,7 +67,6 @@ class ConfigManager:
 
     def is_safety_enabled(self) -> bool:
 
-        # Текущее состояние Safety mode (учитывает permanent disable)
         if self.is_safety_check_permanently_disabled():
             return False
         
@@ -73,16 +75,13 @@ class ConfigManager:
     # - Запись -
     def reset_temp_on_startup(self):
 
-        # При запуске если permanent=False, temp всегда сбрасывается в True
         if not self.is_safety_check_permanently_disabled():
+
             self.config[self.SECTION][self.KEY_TEMP] = "True"
-            self._save()
-
         else:
-
-            # Если проверка отключена навсегда - temp тоже False
             self.config[self.SECTION][self.KEY_TEMP] = "False"
-            self._save()
+
+        self._save()
 
     def set_safety_temp(self, value: bool):
 
@@ -94,11 +93,11 @@ class ConfigManager:
 
     def set_safety_permanent_disable(self, value: bool):
 
-        # Позволяет программно включить/выключить permanent disable
         if self.SECTION not in self.config:
             self.config[self.SECTION] = {}
+
         self.config[self.SECTION][self.KEY_PERMANENT] = str(value)
-        
+
         if value:
             self.config[self.SECTION][self.KEY_TEMP] = "False"
         self._save()

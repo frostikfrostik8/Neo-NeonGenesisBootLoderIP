@@ -12,12 +12,12 @@ class FirmwareConfigManager:
     CONFIG_FILE = get_resource_path("config-firmware.ini")
 
     def __init__(self):
+        self.CONFIG_FILE = get_resource_path("config-firmware.ini")
         self.config = configparser.ConfigParser()
         self._load_or_create()
 
     def _load_or_create(self):
 
-        # Загружает config-firmware.ini или создаёт пустой
         if not os.path.exists(self.CONFIG_FILE):
             self._save()
         else:
@@ -25,20 +25,17 @@ class FirmwareConfigManager:
 
     def _save(self):
 
-        # Сохраняет конфигурацию в файл
         with open(self.CONFIG_FILE, "w", encoding="utf-8") as f:
             self.config.write(f)
 
     def _normalize_string(self, text: str) -> str:
-        
-        # Нормализует строку, нижний регистр, замена "_" и пробелов на "-"
+
         if not text:
             return ""
         return text.lower().replace("_", "-").replace(" ", "-")
 
     def get_all_firmwares(self) -> List[Dict[str, str]]:
 
-        # Возвращает список всех прошивок из конфига
         firmwares = []
         for section in self.config.sections():
             if section.startswith("firmware_"):
@@ -56,10 +53,8 @@ class FirmwareConfigManager:
 
     def get_firmware_by_section(self, section: str) -> Optional[Dict[str, str]]:
 
-        # Получить прошивку по имени секции
         if section not in self.config:
             return None
-        
         return {
             "section": section,
             "name": self.config.get(section, "name", fallback=""),
@@ -72,9 +67,8 @@ class FirmwareConfigManager:
 
     def add_firmware(self, name: str, specifier: str, dev_id: str, port: str, specifier_2: str = "none", ip: str = "none") -> str:
         
-        # Добавляет новую прошивку и возвращает имя секции
-        # Находит следующий свободный номер
         max_num = 0
+        
         for section in self.config.sections():
             if section.startswith("firmware_"):
                 try:
@@ -95,14 +89,23 @@ class FirmwareConfigManager:
         }
         
         self._save()
+        
         return new_section
 
-    def update_firmware(self, section: str, name: str, specifier: str, dev_id: str, 
-                       port: str, specifier_2: str = "none", ip: str = "none"):
+    def update_firmware(self, section: str, name: str, specifier: str, dev_id: str, port: str, specifier_2: str = "none", ip: str = "none"):
         
-        # Обновляет существующую прошивку
         if section not in self.config:
             return
+        
+        self.config[section] = {
+            "name": name,
+            "specifier": self._normalize_string(specifier),
+            "id": dev_id,
+            "port": port,
+            "specifier_2": self._normalize_string(specifier_2) if specifier_2 and specifier_2.lower() != "none" else "none",
+            "ip": ip if ip and ip.lower() != "none" else "none",
+        }
+        self._save()
         
         self.config[section] = {
             "name": name,
@@ -117,7 +120,6 @@ class FirmwareConfigManager:
 
     def delete_firmware(self, section: str):
 
-        # Удаляет прошивку по имени секции
         if section in self.config:
             self.config.remove_section(section)
             self._save()
@@ -125,19 +127,14 @@ class FirmwareConfigManager:
     def reload(self):
 
         # Перечитывает конфигурацию с диска
-        # Обязательно вызывает clear(), чтобы удалить записи,
-        # которые были удалены из файла
-        
         self.config.clear()
         if os.path.exists(self.CONFIG_FILE):
             self.config.read(self.CONFIG_FILE, encoding="utf-8")
 
     def find_firmware_for_file(self, file_path: str) -> Tuple[Optional[Dict[str, str]], str]:
 
-        # Принудительное обновление данных перед поиском
         self.reload()
 
-        # Ищет конфиг для файла прошивки
         if not file_path or not os.path.isfile(file_path):
             return None, "none"
 
@@ -152,43 +149,27 @@ class FirmwareConfigManager:
             if not section.startswith("firmware_"):
                 continue
 
-            specifier = self._normalize_string(
-                self.config.get(section, "specifier", fallback="")
-            )
-            specifier_2 = self._normalize_string(
-                self.config.get(section, "specifier_2", fallback="none")
-            )
+            specifier = self._normalize_string(self.config.get(section, "specifier", fallback=""))
+            specifier_2 = self._normalize_string(self.config.get(section, "specifier_2", fallback="none"))
 
             if not specifier:
                 continue
 
-            # Проверяем совпадение specifier
             if specifier not in filename_normalized:
                 continue
 
-            # Specifier совпал
             score = 1
-            
-            # Проверяем specifier_2
             if specifier_2 and specifier_2 != "none":
-                
                 if specifier_2 in filename_normalized:
-
-                    # Полное совпадение
                     score = 2
                 else:
-                    
-                    # Specifier совпал, но specifier_2 не совпал
                     score = 1
             else:
-
-                # В конфиге нет specifier_2, это тоже полное совпадение
                 score = 2
 
             if score > best_score:
                 best_score = score
                 best_match = self.get_firmware_by_section(section)
-                
                 if score == 2:
                     match_type = "full"
                 else:

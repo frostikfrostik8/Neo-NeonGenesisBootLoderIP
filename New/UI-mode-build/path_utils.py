@@ -1,6 +1,6 @@
 
-# Универсальное определение базовой директории приложения.
-# Работает корректно с Nuitka в режиме --onefile.
+# Универсальное определение базовой директории приложения
+# Работает корректно с Nuitka в режиме --onefile
 
 import os
 import sys
@@ -15,6 +15,7 @@ def get_base_dir() -> str:
 
     # Nuitka скомпилированное приложение
     if "__compiled__" in globals():
+        
         # sys.argv[0] содержит путь к ОРИГИНАЛЬНОМУ exe
         exe_path = os.path.abspath(sys.argv[0])
         return os.path.dirname(exe_path)
