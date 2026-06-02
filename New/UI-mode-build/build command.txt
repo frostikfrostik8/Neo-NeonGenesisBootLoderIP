@@ -1,1 +1,3 @@
-python -m nuitka --standalone --onefile --windows-console-mode=disable --windows-disable-console --windows-icon-from-ico=icon.ico --windows-company-name="PSS" --windows-product-name="EasyLoader UI" --windows-file-version="0.9.3.0" --windows-product-version="0.9.3.0" --enable-plugin=pyside6 --include-qt-plugins=sensible --assume-yes-for-downloads --uac-admin --remove-output main.py
+python -m nuitka --standalone --onefile --windows-console-mode=disable --windows-disable-console --windows-company-name="PSS" --windows-product-name="EasyLoader UI" --windows-file-version="0.9.3.0" --windows-product-version="0.9.3.0" --enable-plugin=pyside6 --include-qt-plugins=sensible --assume-yes-for-downloads --windows-uac-admin --remove-output main.py
+
+--windows-icon-from-ico=icon.ico # не работает иконка не такая какая-то
