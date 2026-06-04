@@ -260,7 +260,7 @@ class EasyLoaderWindow(QMainWindow):
             self.ui.plainText_IP_Config.setEnabled(True)
         else:
 
-            # YES выключили — NO обязан включиться
+            # YES выключили NO обязан включиться
             self.ui.checkBox_NO_IP_2.blockSignals(True)
             self.ui.checkBox_NO_IP_2.setChecked(True)
             self.ui.checkBox_NO_IP_2.blockSignals(False)
