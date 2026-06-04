@@ -181,7 +181,7 @@ class EasyLoaderWindow(QMainWindow):
         # Обработчик нажатия на YES
         if checked:
 
-            # Снимаем NO
+            # Снимает NO
             self.ui.checkBox_NO_IP.blockSignals(True)
             self.ui.checkBox_NO_IP.setChecked(False)
             self.ui.checkBox_NO_IP.blockSignals(False)
@@ -201,7 +201,7 @@ class EasyLoaderWindow(QMainWindow):
         # Обработчик нажатия на NO
         if checked:
 
-            # Снимаем YES
+            # Снимает YES
             self.ui.checkBox_Yes_IP.blockSignals(True)
             self.ui.checkBox_Yes_IP.setChecked(False)
             self.ui.checkBox_Yes_IP.blockSignals(False)
@@ -244,7 +244,7 @@ class EasyLoaderWindow(QMainWindow):
         # Поле IP неактивно, т.к. выбрано NO
         self.ui.plainText_IP_Config.setEnabled(False)
 
-        # Подключаем обработчики
+        # Подключает обработчики
         self.ui.checkBox_Yes_IP_2.toggled.connect(self._on_config_yes_ip_toggled)
         self.ui.checkBox_NO_IP_2.toggled.connect(self._on_config_no_ip_toggled)
 
@@ -269,16 +269,18 @@ class EasyLoaderWindow(QMainWindow):
 
         # Обработчик нажатия NO во вкладке Config
         if checked:
+
             self.ui.checkBox_Yes_IP_2.blockSignals(True)
             self.ui.checkBox_Yes_IP_2.setChecked(False)
             self.ui.checkBox_Yes_IP_2.blockSignals(False)
 
             self.config_ip_enabled = False
             self.ui.plainText_IP_Config.setEnabled(False)
-            self.ui.plainText_IP_Config.setPlainText("")  # очищстка
+            self.ui.plainText_IP_Config.setPlainText("")  # очистка
+        
         else:
 
-            # Запрещаем снимать NO, если YES не активен
+            # Запрещает снимать NO, если YES не активен
             if not self.ui.checkBox_Yes_IP_2.isChecked():
                 self.ui.checkBox_NO_IP_2.blockSignals(True)
                 self.ui.checkBox_NO_IP_2.setChecked(True)
