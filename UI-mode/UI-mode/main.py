@@ -1,10 +1,7 @@
 import sys
-import os
 from typing import Optional, Dict
-from PySide6.QtWidgets import (QApplication, QMainWindow, QMessageBox,QListWidget, QListWidgetItem, QAbstractItemView)
-from PySide6.QtCore import Qt, QStringListModel, QItemSelectionModel
-from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,QFont, QFontDatabase, QGradient, QIcon,QImage, QKeySequence, QLinearGradient, QPainter,QPalette, QPixmap, QRadialGradient, QTransform,QStandardItemModel, QStandardItem)
-from functools import partial
+from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox
+from PySide6.QtGui import QStandardItemModel, QStandardItem
 
 try:
     from UIv1 import Ui_MainWindow
@@ -74,6 +71,8 @@ class EasyLoaderWindow(QMainWindow):
         self.ui.checkBox_Safety_Mode_Manual.stateChanged.connect(self._on_safety_checkbox_changed)
         self.ui.loadBatton_Manual.clicked.connect(self._on_manual_load_clicked)
         self.ui.loadBatton_Auto.clicked.connect(self._on_auto_load_clicked)
+        self.ui.resetButton_Auto.clicked.connect(self._on_auto_reset_clicked)
+        self.ui.resetButton_Manual.clicked.connect(self._on_manual_reset_clicked)
 
     # --- Запуск загрузчика ---
 
@@ -598,6 +597,39 @@ class EasyLoaderWindow(QMainWindow):
         args = self.sender.build_command_args(self.auto_file_path, params["id"], params["port"], ip_for_cmd)
         self._start_loader(self, args, tag)
 
+    def _on_auto_reset_clicked(self):
+
+        # Сброс устройства в Auto Mode
+        # Берет параметры из полей Auto и запрашивает подтверждение
+
+        dev_id = self.ui.plainText_ID_Auto.toPlainText().strip()
+        port = self.ui.plainText_Port_Auto.toPlainText().strip()
+        ip = self.ui.plainText_IP_Auto.toPlainText().strip()
+
+        # Базовая валидация
+        if not dev_id or not port:
+            QMessageBox.warning(self, "Неполные данные", "Поля ID и Port обязательны для заполнения")
+            return
+
+        # Формируем аргументы с "Reset" вместо пути к файлу
+        args = self.sender.build_command_args("Reset", dev_id, port, ip if ip else None)
+
+        # Окно подтверждения (так как Reset - деструктивное действие)
+        reply = QMessageBox.question(
+            self, 
+            "⚠️ Подтверждение Reset",
+            f"Вы уверены, что хотите выполнить сброс устройства?\n\n"
+            f"Параметры:\n"
+            f"  *️⃣ ID: {dev_id}\n"
+            f"  *️⃣ Port: {port}\n"
+            f"  *️⃣ IP: {ip if ip else 'none'}",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            self._start_loader(self, args, "AUTO RESET")
+
     # - Auto Mode с проверкой конфига -
 
     def select_file_auto(self):
@@ -637,6 +669,22 @@ class EasyLoaderWindow(QMainWindow):
         self.sender.send_manual(
             parent=self,
             file_path=self.manual_file_path,
+            dev_id=self.ui.plainTextID_Manual.toPlainText().strip(),
+            port=self.ui.plainTextPort_Manual.toPlainText().strip(),
+            ip=self.ui.plainTextIP_Manual.toPlainText().strip(),
+            ip_required=self.is_manual_ip_required,
+            safety_enabled=self.ui.checkBox_Safety_Mode_Manual.isChecked(),
+            on_run=lambda parent, args, tag: self._start_loader(parent, args, f"MANUAL {tag}")
+        )
+
+    # - Manual Mode Reset -
+
+    def _on_manual_reset_clicked(self):
+
+        # Сброс устройства в Manual Mode с соблюдением логики Safety mode
+        self.sender.send_manual(
+            parent=self,
+            file_path="Reset",
             dev_id=self.ui.plainTextID_Manual.toPlainText().strip(),
             port=self.ui.plainTextPort_Manual.toPlainText().strip(),
             ip=self.ui.plainTextIP_Manual.toPlainText().strip(),

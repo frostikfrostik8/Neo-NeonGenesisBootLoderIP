@@ -58,24 +58,42 @@ class FirmwareSender:
             QMessageBox.critical(parent, "❌ Не найдено", "Конфиг не найден. Загрузка запрещена")
             return False
 
-    def send_manual(
-        self, parent, file_path: str, dev_id: str, port: str, ip: str | None, ip_required: bool, safety_enabled: bool,on_run  # callback(parent, args: list, tag: str) - для запуска потока
+    def send_manual(self, parent, file_path: str, dev_id: str, port: str,ip: str | None, ip_required: bool, safety_enabled: bool,on_run
     ) -> None:
+        is_reset = (file_path == "Reset")
+
+        # Проверка файла (пропускает для Reset)
+        if not is_reset:
+            if not file_path or not os.path.isfile(file_path):
+                QMessageBox.critical(parent, "Ошибка", "Файл прошивки не выбран или не существует")
+                return
+            
         if not file_path or not os.path.isfile(file_path):
             QMessageBox.critical(parent, "Ошибка", "Файл прошивки не выбран или не существует")
             return
 
+        # Валидация полей (ID, Port, IP)
         err = self._validate_manual_fields(dev_id, port, ip, ip_required)
         if err:
             QMessageBox.warning(parent, "Неполные данные", err)
             return
 
+        # Формирует аргументы (file_path может быть "Reset")
         args = self.build_command_args(file_path, dev_id, port, ip if ip_required else None)
 
+        # - Safety OFF -
         if not safety_enabled:
             self._show_unsafe_dialog(parent, args, on_run)
             return
+        
+        # - Safety ON -
+        if is_reset:
 
+            # Для Reset конфига нет, сразу идет в окно "на свой страх и риск"
+            self._show_unknown_dialog(parent, args, on_run, file_path="Reset")
+            return
+
+        # Ищет конфиг для файла
         firmware, match_type = self.fw_config.find_firmware_for_file(file_path)
 
         if match_type == "full":
@@ -121,24 +139,36 @@ class FirmwareSender:
         QMessageBox.warning(parent, "⚠️ Внимание", "Safety mode отключен! Загрузка без проверки")
         on_run(parent, args, "UNSAFE")
 
-    def _show_unknown_dialog(self, parent, args: list, on_run) -> None:
-
-        from PySide6.QtWidgets import QMessageBox
-        
+    def _show_unknown_dialog(self, parent, args: list, on_run, file_path: str = "") -> None:
         box = QMessageBox(parent)
         box.setIcon(QMessageBox.Warning)
-        box.setWindowTitle("⚠️ Прошивка не найдена")
-        box.setText(
-            "Прошивка не найдена в базе\n"
-            "Нажмите «Загрузить прошивку», чтобы запустить\n"
-            "на свой страх и риск"
-        )
+        
+        if file_path == "Reset":
+            box.setWindowTitle("⚠️ Команда Reset")
+            box.setText(
+                "Команда Reset не имеет профиля в базе конфигураций\n"
+                "Нажмите «Выполнить», чтобы запустить сброс\n"
+                "на свой страх и риск"
+            )
+            btn_text = "Выполнить сброс"
+            tag = "RESET RISK"
+        else:
+            box.setWindowTitle("⚠️ Прошивка не найдена")
+            box.setText(
+                "Прошивка не найдена в базе\n"
+                "Нажмите «Загрузить прошивку», чтобы запустить\n"
+                "на свой страх и риск"
+            )
+            btn_text = "Загрузить прошивку"
+            tag = "UNKNOWN RISK"
+
         box.setStandardButtons(QMessageBox.Cancel)
-        btn_load = box.addButton("Загрузить прошивку", QMessageBox.AcceptRole)
+        btn_load = box.addButton(btn_text, QMessageBox.AcceptRole)
         box.setDefaultButton(btn_load)
         box.exec()
+        
         if box.clickedButton() == btn_load:
-            on_run(parent, args, "UNKNOWN RISK")
+            on_run(parent, args, tag)
 
     @staticmethod
     def _run_command(command: str, tag: str) -> None:

@@ -342,9 +342,9 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>150</y>
+        <y>120</y>
         <width>411</width>
-        <height>211</height>
+        <height>241</height>
        </rect>
       </property>
       <property name="autoFillBackground">
@@ -640,9 +640,9 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>150</y>
+        <y>120</y>
         <width>411</width>
-        <height>211</height>
+        <height>241</height>
        </rect>
       </property>
       <property name="autoFillBackground">

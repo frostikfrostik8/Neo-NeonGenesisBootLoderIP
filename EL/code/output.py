@@ -16,7 +16,7 @@ class logger:
         pass
 
     #For write to console and to Log file
-    def log(self, s, flush=True):
+    def log(self, s):
         print(s, flush=True)
         print(s, file = self.LogUpdate, flush=True)
 
