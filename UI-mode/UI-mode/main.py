@@ -622,9 +622,9 @@ class EasyLoaderWindow(QMainWindow):
             "⚠️ Подтверждение Reset",
             f"Вы уверены, что хотите выполнить сброс устройства?\n\n"
             f"Параметры:\n"
-            f"  0 ID: {dev_id}\n"
-            f"  0 Port: {port}\n"
-            f"  0 IP: {ip if ip else 'none'}",
+            f"  ❗ ID: {dev_id}\n"
+            f"  ❗ Port: {port}\n"
+            f"  ❗ IP: {ip if ip else 'none'}",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
         )
