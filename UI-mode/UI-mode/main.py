@@ -301,15 +301,15 @@ class EasyLoaderWindow(QMainWindow):
         # Для простоты создадил новый QListWidget
         # Да костыли, и что? (нужно поправить, но лень)
         
-        # Подключаем кнопки
+        # Подключает кнопки
         self.ui.toolButton_Delete_Config.clicked.connect(self._delete_config)
         self.ui.toolButton_Modify_Config.clicked.connect(self._modify_config)
         self.ui.toolButton_Add_New_Config__Accept_Config.clicked.connect(self._add_or_accept_config)
         
-        # Загружаем список прошивок
+        # Загружает список прошивок
         self._reload_config_list()
         
-        # Подключаем клик по пустому месту в таблице
+        # Подключает клик по пустому месту в таблице
         # (для QTableView это сложо, нужно использовать selectionModel)
 
     def _reload_config_list(self):
