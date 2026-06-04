@@ -58,19 +58,15 @@ class FirmwareSender:
             QMessageBox.critical(parent, "❌ Не найдено", "Конфиг не найден. Загрузка запрещена")
             return False
 
-    def send_manual(self, parent, file_path: str, dev_id: str, port: str,ip: str | None, ip_required: bool, safety_enabled: bool,on_run
-    ) -> None:
+    def send_manual(self, parent, file_path: str, dev_id: str, port: str,ip: str | None, ip_required: bool, safety_enabled: bool,on_run) -> None:
+        
         is_reset = (file_path == "Reset")
 
-        # Проверка файла (пропускает для Reset)
+        # Проверка файла (пропуск для Reset)
         if not is_reset:
             if not file_path or not os.path.isfile(file_path):
                 QMessageBox.critical(parent, "Ошибка", "Файл прошивки не выбран или не существует")
                 return
-            
-        if not file_path or not os.path.isfile(file_path):
-            QMessageBox.critical(parent, "Ошибка", "Файл прошивки не выбран или не существует")
-            return
 
         # Валидация полей (ID, Port, IP)
         err = self._validate_manual_fields(dev_id, port, ip, ip_required)
@@ -78,18 +74,17 @@ class FirmwareSender:
             QMessageBox.warning(parent, "Неполные данные", err)
             return
 
-        # Формирует аргументы (file_path может быть "Reset")
+        # Формирует аргументы (file_path может быть "Reset" или путь к файлу)
         args = self.build_command_args(file_path, dev_id, port, ip if ip_required else None)
 
         # - Safety OFF -
         if not safety_enabled:
             self._show_unsafe_dialog(parent, args, on_run)
             return
-        
+
         # - Safety ON -
         if is_reset:
-
-            # Для Reset конфига нет, сразу идет в окно "на свой страх и риск"
+            # Для Reset конфига нет, сразу идем в окно "на свой страх и риск"
             self._show_unknown_dialog(parent, args, on_run, file_path="Reset")
             return
 
@@ -98,38 +93,43 @@ class FirmwareSender:
 
         if match_type == "full":
 
+            # Проверяет совпадение параметров
             errors = []
-
             if firmware.get("id") != dev_id:
                 errors.append(f"ID: введено '{dev_id}', в конфиге '{firmware.get('id')}'")
-
             if firmware.get("port") != port:
                 errors.append(f"Port: введено '{port}', в конфиге '{firmware.get('port')}'")
+            
             config_ip = firmware.get("ip", "none")
 
             if ip_required:
                 if config_ip.lower() == "none":
-                    errors.append("IP: введено, но в конфиге IP не указан")
-
+                    errors.append("IP: введено значение, но в конфиге IP не указан")
                 elif config_ip != ip:
                     errors.append(f"IP: введено '{ip}', в конфиге '{config_ip}'")
-                    
             else:
-
                 if config_ip.lower() != "none" and ip:
-                    errors.append(f"IP: введено '{ip}', но в конфиге '{config_ip}'")
+                    errors.append(f"IP: введено '{ip}', но в конфиге указан '{config_ip}'")
 
             if errors:
-                QMessageBox.warning(parent, "⚠️ Параметры не совпадают", "\n".join(errors))
+                error_text = "\n".join(errors)
+                QMessageBox.warning(parent, "⚠️ Параметры не совпадают", f"Конфиг найден, но параметры отличаются:\n\n{error_text}")
                 return
 
+            # Всё совпало - запускаем
             self._show_ok_dialog(parent, args, firmware, on_run)
 
         elif match_type == "partial":
-            QMessageBox.warning(parent, "⚠️ Неполное совпадение", "Частичное совпадение. Загрузка запрещена")
-            
+            QMessageBox.warning(
+                parent,
+                "⚠️ Неполное совпадение",
+                "Найдено частичное совпадение конфигурации\n"
+                "Загрузка запрещена в защищённом режиме"
+            )
         else:
-            self._show_unknown_dialog(parent, args, on_run)
+
+            # Конфиг не найден, окно "на свой страх и риск"
+            self._show_unknown_dialog(parent, args, on_run, file_path="")
 
     def _show_ok_dialog(self, parent, args: list, firmware: dict, on_run) -> None:
         QMessageBox.information(parent, "✅ Всё готово", f"Конфиг найден: {firmware.get('name', '?')}\nЗапускаю загрузку...")
