@@ -1,0 +1,7 @@
+для UI: python -m nuitka --standalone --onefile --windows-console-mode=disable --windows-icon-from-ico=icon.ico --windows-disable-console --windows-company-name="PSS" --windows-product-name="EasyLoader UI" --windows-file-version="0.9.7.0" --windows-product-version="0.9.7.0" --enable-plugin=pyside6 --include-qt-plugins=sensible --assume-yes-for-downloads --remove-output main.py
+
+--windows-uac-admin # Запускать файл от админа
+
+--windows-icon-from-ico=icon.ico # не работает иконка не такая какая-то
+
+Для EL: python -m nuitka --standalone --onefile --windows-console-mode=force --output-filename=EasyLoader.exe --remove-output --assume-yes-for-downloads EasyLoader.py 

@@ -103,9 +103,9 @@
      <widget class="QPushButton" name="loadBatton_Auto">
       <property name="geometry">
        <rect>
-        <x>10</x>
+        <x>60</x>
         <y>80</y>
-        <width>141</width>
+        <width>101</width>
         <height>31</height>
        </rect>
       </property>
@@ -228,7 +228,7 @@
       </property>
       <property name="font">
        <font>
-        <pointsize>20</pointsize>
+        <pointsize>15</pointsize>
        </font>
       </property>
       <property name="plainText">
@@ -342,13 +342,45 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>120</y>
+        <y>150</y>
         <width>411</width>
-        <height>241</height>
+        <height>211</height>
        </rect>
       </property>
       <property name="autoFillBackground">
        <bool>true</bool>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="resetButton_Auto">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>80</y>
+        <width>41</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="autoFillBackground">
+       <bool>false</bool>
+      </property>
+      <property name="text">
+       <string>🔁</string>
+      </property>
+      <property name="flat">
+       <bool>true</bool>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_Reset_Auto">
+      <property name="geometry">
+       <rect>
+        <x>15</x>
+        <y>65</y>
+        <width>31</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Reset</string>
       </property>
      </widget>
     </widget>
@@ -381,9 +413,9 @@
      <widget class="QPushButton" name="loadBatton_Manual">
       <property name="geometry">
        <rect>
-        <x>10</x>
+        <x>60</x>
         <y>80</y>
-        <width>141</width>
+        <width>101</width>
         <height>31</height>
        </rect>
       </property>
@@ -408,7 +440,7 @@
       </property>
       <property name="font">
        <font>
-        <pointsize>20</pointsize>
+        <pointsize>15</pointsize>
        </font>
       </property>
       <property name="plainText">
@@ -608,13 +640,45 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>120</y>
+        <y>150</y>
         <width>411</width>
-        <height>241</height>
+        <height>211</height>
        </rect>
       </property>
       <property name="autoFillBackground">
        <bool>true</bool>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="resetButton_Manual">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>80</y>
+        <width>41</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="autoFillBackground">
+       <bool>false</bool>
+      </property>
+      <property name="text">
+       <string>🔁</string>
+      </property>
+      <property name="flat">
+       <bool>true</bool>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_Reset_Manual">
+      <property name="geometry">
+       <rect>
+        <x>15</x>
+        <y>65</y>
+        <width>31</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Reset</string>
       </property>
      </widget>
     </widget>

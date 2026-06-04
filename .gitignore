@@ -1,6 +1,5 @@
-/New/code/__pycache__
-/New/UI-mode/__pycache__
+__pycache__
 LogUpdate.txt
-New/UI-mode-build/nuitka-crash-report.xml
-New/UI-mode-build/main.dist/main.dll
-/New/UI-mode-run
+nuitka-crash-report.xml
+main.dll
+/UI-mode/UI-mode-build
