@@ -61,8 +61,11 @@ class EasyLoaderWindow(QMainWindow):
         # Модели для логов
         self.auto_log_model = QStandardItemModel()
         self.manual_log_model = QStandardItemModel()
+        self.tree_log_model = QStandardItemModel()
+
         self.ui.Stages_List_View_Auto.setModel(self.auto_log_model)
         self.ui.Stages_List_View_Manual.setModel(self.manual_log_model)
+        self.ui.Stages_List_View_Tree.setModel(self.tree_log_model)
 
 
         # Инициализация состояния Safety mode из config.ini
@@ -95,32 +98,58 @@ class EasyLoaderWindow(QMainWindow):
             QMessageBox.warning(self, "Занят", "Предыдущая загрузка ещё идёт.")
             return
 
-        # Определяет режим
-        self.current_mode = "auto" if parent == self and tag.startswith("AUTO") else "manual"
+        # Определяет режим по тегу
+        tag_upper = tag.upper()
+        if tag_upper.startswith("AUTO"):
+            self.current_mode = "auto"
+        elif tag_upper.startswith("TREE"):
+            self.current_mode = "tree"
+        else:
+            self.current_mode = "manual"
 
-        # Определяет целевые виджеты
+        # Выбирает виджеты в зависимости от режима
         if self.current_mode == "auto":
             progress_bar = self.ui.progressBar_Auto
             log_model = self.auto_log_model
+            log_view = self.ui.Stages_List_View_Auto
             load_button = self.ui.loadBatton_Auto
-        else:
+            reset_button = getattr(self.ui, 'resetButton_Auto', None)
+
+        elif self.current_mode == "tree":
+            progress_bar = self.ui.progressBar_Tree
+            log_model = self.tree_log_model
+            log_view = self.ui.Stages_List_View_Tree
+            load_button = self.ui.loadBatton_Tree
+            reset_button = getattr(self.ui, 'resetButton_Tree', None)
+
+        else:  # manual
             progress_bar = self.ui.progress_Bar_Manual
             log_model = self.manual_log_model
+            log_view = self.ui.Stages_List_View_Manual
             load_button = self.ui.loadBatton_Manual
+            reset_button = getattr(self.ui, 'resetButton_Manual', None)
 
         # Сброс состояния
         self.max_progress = 0
         progress_bar.setValue(0)
         log_model.clear()
         load_button.setEnabled(False)
+        if reset_button:
+            reset_button.setEnabled(False)
 
-        # Создаёт и запускает поток
+        # Создаёт и запускаем поток
         exe_name = self.config.get_exe_name()
         self.loader_thread = LoaderThread(exe_name, args)
 
-        self.loader_thread.log_received.connect(lambda line: self._on_log_received(line, log_model))
-        self.loader_thread.progress_received.connect(lambda p: self._on_progress_received(p, progress_bar))
-        self.loader_thread.process_finished.connect(lambda: self._on_process_finished(load_button))
+        self.loader_thread.log_received.connect(
+            lambda line: self._on_log_received(line, log_model, log_view)
+        )
+        self.loader_thread.progress_received.connect(
+            lambda p: self._on_progress_received(p, progress_bar)
+        )
+        self.loader_thread.process_finished.connect(
+            lambda: self._on_process_finished(load_button, reset_button)
+        )
         self.loader_thread.error_occurred.connect(self._on_error)
 
         print("=" * 60)
@@ -129,23 +158,29 @@ class EasyLoaderWindow(QMainWindow):
 
         self.loader_thread.start()
 
-    def _on_log_received(self, line: str, model: QStandardItemModel):
+    def _on_log_received(self, line: str, model: QStandardItemModel, view):
 
         # Добавление строки лога в QListView
         item = QStandardItem(line)
         item.setEditable(False)
         model.appendRow(item)
+        
+        # Прокрутка в конец
+        view.scrollToBottom()
 
         # Прокрутка в конец
         list_view = self.ui.Stages_List_View_Auto if model == self.auto_log_model else self.ui.Stages_List_View_Manual
         list_view.scrollToBottom()
 
-    def _on_progress_received(self, progress: int, progress_bar):
+    def _on_process_finished(self, load_button, reset_button=None):
 
-        # Обновление прогресс бара
-        if progress > self.max_progress:
-            self.max_progress = progress
-            progress_bar.setValue(self.max_progress)
+        # Завершение процесса - разблокировка кнопок
+        load_button.setEnabled(True)
+        if reset_button:
+            reset_button.setEnabled(True)
+            
+        print("[INFO] Процесс EasyLoader завершён")
+        QMessageBox.information(self, "Завершено", "Загрузка завершена")
 
     def _on_process_finished(self, load_button):
 
@@ -184,6 +219,11 @@ class EasyLoaderWindow(QMainWindow):
         self.ui.comboBox_Level_1_Name_Tree.currentTextChanged.connect(self._on_tree_l1_changed)
         self.ui.comboBox_Level_2_Name_Tree.currentTextChanged.connect(self._on_tree_l2_changed)
 
+        # Синхронизация при ручном изменении ID (ID -> Name)
+        self.ui.comboBox_Level_1_ID_Tree.currentIndexChanged.connect(self._sync_l1_id_to_name)
+        self.ui.comboBox_Level_2_ID_Tree.currentIndexChanged.connect(self._sync_l2_id_to_name)
+        self.ui.comboBox_Level_3_ID_Tree_3.currentIndexChanged.connect(self._sync_l3_id_to_name)
+
     def _update_udp_state(self):
 
         # Отдельный метод для управления блокировкой поля IP
@@ -213,6 +253,32 @@ class EasyLoaderWindow(QMainWindow):
             self.ui.plainTextIP_Tree.setReadOnly(True)
             self.ui.plainTextIP_Tree.setPlainText("")
             self.tree_ip_required = False
+
+    def _sync_l1_id_to_name(self, index):
+
+        # При смене ID вручную синхронизирует Name и обновляет каскад L2/L3
+        self.ui.comboBox_Level_1_Name_Tree.blockSignals(True)
+        self.ui.comboBox_Level_1_Name_Tree.setCurrentIndex(index)
+        self.ui.comboBox_Level_1_Name_Tree.blockSignals(False)
+        
+        # Вручную триггерим обновление каскада
+        name = self.ui.comboBox_Level_1_Name_Tree.currentText()
+        self._on_tree_l1_changed(name)
+
+    def _sync_l2_id_to_name(self, index):
+
+        # При смене ID L2 вручную синхронизирует Name и обновляет L3
+        self.ui.comboBox_Level_2_Name_Tree.blockSignals(True)
+        self.ui.comboBox_Level_2_Name_Tree.setCurrentIndex(index)
+        self.ui.comboBox_Level_2_Name_Tree.blockSignals(False)
+        
+        name = self.ui.comboBox_Level_2_Name_Tree.currentText()
+        self._on_tree_l2_changed(name)
+
+    def _sync_l3_id_to_name(self, index):
+
+        # При смене ID L3 просто пересчитывает итоговый ID
+        self._update_combined_id()
 
     def _populate_combo_pair(self, cb_name, cb_id, items):
         cb_name.blockSignals(True)
@@ -249,7 +315,9 @@ class EasyLoaderWindow(QMainWindow):
                 current_l1_data = item
                 idx = self.ui.comboBox_Level_1_ID_Tree.findText(item["id"])
                 if idx >= 0: 
+                    self.ui.comboBox_Level_1_ID_Tree.blockSignals(True)
                     self.ui.comboBox_Level_1_ID_Tree.setCurrentIndex(idx)
+                    self.ui.comboBox_Level_1_ID_Tree.blockSignals(False)
                 break
                 
         l2_items = current_l1_data.get("level2", []) if current_l1_data else []
@@ -285,7 +353,10 @@ class EasyLoaderWindow(QMainWindow):
                 for l2 in l1.get("level2", []):
                     if l2["name"] == name:
                         idx = self.ui.comboBox_Level_2_ID_Tree.findText(l2["id"])
-                        if idx >= 0: self.ui.comboBox_Level_2_ID_Tree.setCurrentIndex(idx)
+                        if idx >= 0: 
+                            self.ui.comboBox_Level_2_ID_Tree.blockSignals(True)
+                            self.ui.comboBox_Level_2_ID_Tree.setCurrentIndex(idx)
+                            self.ui.comboBox_Level_2_ID_Tree.blockSignals(False)
                         l3_items = l2.get("level3", [])
                         break
                         
