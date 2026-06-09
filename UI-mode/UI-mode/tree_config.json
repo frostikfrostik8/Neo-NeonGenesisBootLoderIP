@@ -1,0 +1,317 @@
+{
+  "level1": [
+    {
+      "name": "LAN-RA",
+      "id": "5",
+      "udp": "required",
+      "level2": [
+        {
+          "name": "DIDO",
+          "id": "F",
+          "level3": [
+            {"name": "EEPROM", "id": "0"},
+            {"name": "FLASH_W25", "id": "A"}
+          ]
+        },
+        {
+          "name": "SENSOR_HUB",
+          "id": "3",
+          "level3": [
+            {"name": "TEMP_MODULE", "id": "1"},
+            {"name": "HUMIDITY", "id": "4"}
+          ]
+        },
+        {
+          "name": "POWER_UNIT",
+          "id": "7",
+          "level3": [
+            {"name": "RELAY_BOARD", "id": "B"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HUB-MAIN",
+      "id": "A",
+      "udp": "none",
+      "level2": [
+        {
+          "name": "EXTENDER",
+          "id": "2",
+          "level3": [
+            {"name": "OPTO_COUPLER", "id": "C"},
+            {"name": "RELAY_BOARD", "id": "B"}
+          ]
+        },
+        {
+          "name": "CCS_BOARD",
+          "id": "8",
+          "level3": [
+            {"name": "FLASH_W25", "id": "A"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "STM32-HUB",
+      "id": "1",
+      "udp": "optional",
+      "level2": [
+        {
+          "name": "CAN_MODULE",
+          "id": "4",
+          "level3": [
+            {"name": "EEPROM", "id": "0"}
+          ]
+        },
+        {
+          "name": "BLE_ADAPTER",
+          "id": "6",
+          "level3": [
+            {"name": "TEMP_MODULE", "id": "1"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CCSEM3",
+      "id": "2",
+      "udp": "optional",
+      "level2": [
+        {
+          "name": "POWER_STAGE",
+          "id": "9",
+          "level3": [
+            {"name": "CCS_BOARD", "id": "8"}
+          ]
+        },
+        {
+          "name": "DCHUB",
+          "id": "E",
+          "level3": [
+            {"name": "FLASH_W25", "id": "A"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CHS-RA",
+      "id": "3",
+      "udp": "none",
+      "level2": [
+        {
+          "name": "LCSC",
+          "id": "5",
+          "level3": [
+            {"name": "LIQUID_BALANCER", "id": "A"},
+            {"name": "DRY_BALANCER", "id": "B"}
+          ]
+        },
+        {
+          "name": "CONVERTER",
+          "id": "6",
+          "level3": [
+            {"name": "MASTER", "id": "1"},
+            {"name": "SLAVE", "id": "2"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "TATA",
+      "id": "4",
+      "udp": "none",
+      "level2": [
+        {
+          "name": "MODEM_GSM",
+          "id": "7",
+          "level3": [
+            {"name": "SIM800", "id": "3"},
+            {"name": "SIM7600", "id": "9"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "RAv2",
+      "id": "6",
+      "udp": "required",
+      "level2": [
+        {
+          "name": "MASTER_BOARD",
+          "id": "A",
+          "level3": [
+            {"name": "EEPROM", "id": "0"}
+          ]
+        },
+        {
+          "name": "CONVERTER_BOARD",
+          "id": "B",
+          "level3": [
+            {"name": "FLASH_W25", "id": "A"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ESP32-BASE",
+      "id": "7",
+      "udp": "optional",
+      "level2": [
+        {
+          "name": "BLE_MODULE",
+          "id": "C",
+          "level3": [
+            {"name": "ANTENNA_EXT", "id": "5"}
+          ]
+        },
+        {
+          "name": "WIFI_MODULE",
+          "id": "D",
+          "level3": [
+            {"name": "EEPROM", "id": "0"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DEBUG-PROBE",
+      "id": "8",
+      "udp": "none",
+      "level2": []
+    },
+    {
+      "name": "LIQUID-BALANCER",
+      "id": "9",
+      "udp": "optional",
+      "level2": [
+        {
+          "name": "PUMP_CTRL",
+          "id": "1",
+          "level3": [
+            {"name": "RELAY_BOARD", "id": "B"}
+          ]
+        },
+        {
+          "name": "VALVE_CTRL",
+          "id": "2",
+          "level3": [
+            {"name": "OPTO_COUPLER", "id": "C"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DRY-BALANCER",
+      "id": "B",
+      "udp": "none",
+      "level2": [
+        {
+          "name": "HEATER_CTRL",
+          "id": "3",
+          "level3": [
+            {"name": "TEMP_MODULE", "id": "1"}
+          ]
+        },
+        {
+          "name": "FAN_CTRL",
+          "id": "4",
+          "level3": [
+            {"name": "RELAY_BOARD", "id": "B"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "POWER-STATION",
+      "id": "C",
+      "udp": "required",
+      "level2": [
+        {
+          "name": "INVERTER",
+          "id": "5",
+          "level3": [
+            {"name": "CCS_BOARD", "id": "8"}
+          ]
+        },
+        {
+          "name": "BATTERY_MGR",
+          "id": "6",
+          "level3": [
+            {"name": "TEMP_MODULE", "id": "1"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "EV-CHARGER",
+      "id": "D",
+      "udp": "required",
+      "level2": [
+        {
+          "name": "CCS_MODULE",
+          "id": "A",
+          "level3": [
+            {"name": "POWER_STAGE", "id": "9"}
+          ]
+        },
+        {
+          "name": "CHADEMO_MODULE",
+          "id": "B",
+          "level3": [
+            {"name": "EEPROM", "id": "0"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "SOLAR-CTRL",
+      "id": "E",
+      "udp": "optional",
+      "level2": [
+        {
+          "name": "MPPT_TRACKER",
+          "id": "7",
+          "level3": [
+            {"name": "FLASH_W25", "id": "A"}
+          ]
+        },
+        {
+          "name": "GRID_TIE",
+          "id": "8",
+          "level3": [
+            {"name": "RELAY_BOARD", "id": "B"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "IOT-GATEWAY",
+      "id": "F",
+      "udp": "required",
+      "level2": [
+        {
+          "name": "ZIGBEE_COORD",
+          "id": "1",
+          "level3": [
+            {"name": "EEPROM", "id": "0"}
+          ]
+        },
+        {
+          "name": "LORA_MODULE",
+          "id": "2",
+          "level3": [
+            {"name": "FLASH_W25", "id": "A"}
+          ]
+        },
+        {
+          "name": "NB_IOT_MODEM",
+          "id": "3",
+          "level3": [
+            {"name": "TEMP_MODULE", "id": "1"}
+          ]
+        }
+      ]
+    }
+  ]
+}
