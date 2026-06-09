@@ -6,11 +6,19 @@
       "udp": "required",
       "level2": [
         {
+          "name": "none",
+          "id": "",
+          "level3": [
+            {"name": "none", "id": ""}
+          ]
+        },
+        {
           "name": "DIDO",
           "id": "F",
           "level3": [
             {"name": "EEPROM", "id": "0"},
-            {"name": "FLASH_W25", "id": "A"}
+            {"name": "FLASH_W25", "id": "A"},
+            {"name": "none", "id": ""}
           ]
         },
         {
@@ -18,7 +26,8 @@
           "id": "3",
           "level3": [
             {"name": "TEMP_MODULE", "id": "1"},
-            {"name": "HUMIDITY", "id": "4"}
+            {"name": "HUMIDITY", "id": "4"},
+            {"name": "none", "id": ""}
           ]
         },
         {
