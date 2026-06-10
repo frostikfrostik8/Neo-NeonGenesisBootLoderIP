@@ -1,4 +1,6 @@
 import sys
+import os
+import json
 from typing import Optional, Dict
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox
 from PySide6.QtGui import QStandardItemModel, QStandardItem
@@ -13,6 +15,7 @@ try:
     from firmware_config_manager import FirmwareConfigManager
     from sender import FirmwareSender
     from loader_thread import LoaderThread
+    from path_utils import get_resource_path
 
 except ImportError as e:
     print(f"Ошибка импорта: {e}")
@@ -198,48 +201,145 @@ class EasyLoaderWindow(QMainWindow):
     # - Tree Mode -
 
     def _init_tree_mode(self):
-        from path_utils import get_resource_path
-        import json, os
+
+        # Загружает JSON-конфиг и инициализирует UI для Tree Mode
         
         self.tree_config_path = get_resource_path("tree_config.json")
         if os.path.exists(self.tree_config_path):
             with open(self.tree_config_path, "r", encoding="utf-8") as f:
                 self.tree_data = json.load(f)
         else:
-            self.tree_data = {"level1": []}
+            self.tree_data = {}
             with open(self.tree_config_path, "w", encoding="utf-8") as f:
                 json.dump(self.tree_data, f, indent=2, ensure_ascii=False)
 
-        self._populate_level1()
+        self._populate_level1_all()
         
-        # Принудительно обновляет состояние IP при старте
-        self._update_udp_state()
-        
-        # Каскадные обновления
+        # Каскадные обновления (Name -> ID)
         self.ui.comboBox_Level_1_Name_Tree.currentTextChanged.connect(self._on_tree_l1_changed)
         self.ui.comboBox_Level_2_Name_Tree.currentTextChanged.connect(self._on_tree_l2_changed)
-
-        # Синхронизация при ручном изменении ID (ID -> Name)
+        self.ui.comboBox_Level_3_Name_Tree.currentTextChanged.connect(self._on_tree_l3_changed)
+        
+        # Синхронизация ID -> Name
         self.ui.comboBox_Level_1_ID_Tree.currentIndexChanged.connect(self._sync_l1_id_to_name)
         self.ui.comboBox_Level_2_ID_Tree.currentIndexChanged.connect(self._sync_l2_id_to_name)
         self.ui.comboBox_Level_3_ID_Tree_3.currentIndexChanged.connect(self._sync_l3_id_to_name)
 
-    def _update_udp_state(self):
+    def _populate_level1_all(self):
 
-        # Отдельный метод для управления блокировкой поля IP
-        # .strip() на всякий случай, если из UI приходят пробелы
+        # Заполняет L1 всеми корневыми платами (у которых есть UDP флаг)
+        root_boards = []
+        for name, data in self.tree_data.items():
+            if "udp" in data:
+                root_boards.append({"name": name, "id": data["id"]})
+        root_boards.sort(key=lambda x: x["name"])
+        self._populate_combo_pair(
+            self.ui.comboBox_Level_1_Name_Tree,
+            self.ui.comboBox_Level_1_ID_Tree,
+            root_boards
+        )
+
+    def _populate_combo_pair(self, cb_name, cb_id, items):
+
+        # Заполняет пару комбобоксов, добавляя пустой пункт первым
+        cb_name.blockSignals(True)
+        cb_id.blockSignals(True)
+        cb_name.clear()
+        cb_id.clear()
+        cb_name.addItem("")
+        cb_id.addItem("")
+        for item in items:
+            cb_name.addItem(item["name"])
+            cb_id.addItem(item["id"])
+        cb_name.blockSignals(False)
+        cb_id.blockSignals(False)
+
+    def _on_tree_l1_changed(self, name):
+        name = name.strip()
+        if not name:
+            self.ui.comboBox_Level_2_Name_Tree.clear()
+            self.ui.comboBox_Level_2_ID_Tree.clear()
+            self.ui.comboBox_Level_3_Name_Tree.clear()
+            self.ui.comboBox_Level_3_ID_Tree_3.clear()
+            self._update_combined_id()
+            self._update_udp_state()
+            return
+        
+        if name in self.tree_data:
+            board_id = self.tree_data[name]["id"]
+            idx = self.ui.comboBox_Level_1_ID_Tree.findText(board_id)
+            if idx >= 0:
+                self.ui.comboBox_Level_1_ID_Tree.blockSignals(True)
+                self.ui.comboBox_Level_1_ID_Tree.setCurrentIndex(idx)
+                self.ui.comboBox_Level_1_ID_Tree.blockSignals(False)
+        
+        children_names = self.tree_data.get(name, {}).get("children", [])
+        children = [{"name": c, "id": self.tree_data[c]["id"]} 
+                    for c in children_names if c in self.tree_data]
+        children.sort(key=lambda x: x["name"])
+        
+        self._populate_combo_pair(self.ui.comboBox_Level_2_Name_Tree, self.ui.comboBox_Level_2_ID_Tree, children)
+        self.ui.comboBox_Level_3_Name_Tree.clear()
+        self.ui.comboBox_Level_3_ID_Tree_3.clear()
+        self._update_udp_state()
+        self._update_combined_id()
+
+    def _on_tree_l2_changed(self, name):
+        name = name.strip()
+        if not name:
+            self.ui.comboBox_Level_3_Name_Tree.clear()
+            self.ui.comboBox_Level_3_ID_Tree_3.clear()
+            self._update_combined_id()
+            return
+            
+        if name in self.tree_data:
+            board_id = self.tree_data[name]["id"]
+            idx = self.ui.comboBox_Level_2_ID_Tree.findText(board_id)
+            if idx >= 0:
+                self.ui.comboBox_Level_2_ID_Tree.blockSignals(True)
+                self.ui.comboBox_Level_2_ID_Tree.setCurrentIndex(idx)
+                self.ui.comboBox_Level_2_ID_Tree.blockSignals(False)
+        
+        children_names = self.tree_data.get(name, {}).get("children", [])
+        children = [{"name": c, "id": self.tree_data[c]["id"]} 
+                    for c in children_names if c in self.tree_data]
+        children.sort(key=lambda x: x["name"])
+        
+        self._populate_combo_pair(self.ui.comboBox_Level_3_Name_Tree, self.ui.comboBox_Level_3_ID_Tree_3, children)
+        self._update_combined_id()
+
+    def _on_tree_l3_changed(self, name):
+        name = name.strip()
+        if name and name in self.tree_data:
+            board_id = self.tree_data[name]["id"]
+            idx = self.ui.comboBox_Level_3_ID_Tree_3.findText(board_id)
+            if idx >= 0:
+                self.ui.comboBox_Level_3_ID_Tree_3.blockSignals(True)
+                self.ui.comboBox_Level_3_ID_Tree_3.setCurrentIndex(idx)
+                self.ui.comboBox_Level_3_ID_Tree_3.blockSignals(False)
+        self._update_combined_id()
+
+    def _sync_l1_id_to_name(self, index):
+        self.ui.comboBox_Level_1_Name_Tree.blockSignals(True)
+        self.ui.comboBox_Level_1_Name_Tree.setCurrentIndex(index)
+        self.ui.comboBox_Level_1_Name_Tree.blockSignals(False)
+        self._on_tree_l1_changed(self.ui.comboBox_Level_1_Name_Tree.currentText())
+
+    def _sync_l2_id_to_name(self, index):
+        self.ui.comboBox_Level_2_Name_Tree.blockSignals(True)
+        self.ui.comboBox_Level_2_Name_Tree.setCurrentIndex(index)
+        self.ui.comboBox_Level_2_Name_Tree.blockSignals(False)
+        self._on_tree_l2_changed(self.ui.comboBox_Level_2_Name_Tree.currentText())
+
+    def _sync_l3_id_to_name(self, index):
+        self._update_combined_id()
+
+    def _update_udp_state(self):
         l1_name = self.ui.comboBox_Level_1_Name_Tree.currentText().strip()
-        
         udp_flag = "none"
-        l1_items = self.tree_data.get("level1", [])
-        for item in l1_items:
-            if item["name"] == l1_name:
-                udp_flag = item.get("udp", "none").lower()
-                break
-                
-        # Отладка в консоль
-        print(f"[TREE DEBUG] L1: '{l1_name}' -> UDP flag: '{udp_flag}'")
-        
+        if l1_name and l1_name in self.tree_data:
+            udp_flag = self.tree_data[l1_name].get("udp", "none").lower()
+            
         if udp_flag == "required":
             self.ui.plainTextIP_Tree.setEnabled(True)
             self.ui.plainTextIP_Tree.setReadOnly(False)
@@ -248,174 +348,48 @@ class EasyLoaderWindow(QMainWindow):
             self.ui.plainTextIP_Tree.setEnabled(True)
             self.ui.plainTextIP_Tree.setReadOnly(False)
             self.tree_ip_required = False
-        else: # "none" или отсутствует
+        else:
             self.ui.plainTextIP_Tree.setEnabled(False)
             self.ui.plainTextIP_Tree.setReadOnly(True)
             self.ui.plainTextIP_Tree.setPlainText("")
             self.tree_ip_required = False
 
-    def _sync_l1_id_to_name(self, index):
-
-        # При смене ID вручную синхронизирует Name и обновляет каскад L2/L3
-        self.ui.comboBox_Level_1_Name_Tree.blockSignals(True)
-        self.ui.comboBox_Level_1_Name_Tree.setCurrentIndex(index)
-        self.ui.comboBox_Level_1_Name_Tree.blockSignals(False)
-        
-        # Вручную триггерим обновление каскада
-        name = self.ui.comboBox_Level_1_Name_Tree.currentText()
-        self._on_tree_l1_changed(name)
-
-    def _sync_l2_id_to_name(self, index):
-
-        # При смене ID L2 вручную синхронизирует Name и обновляет L3
-        self.ui.comboBox_Level_2_Name_Tree.blockSignals(True)
-        self.ui.comboBox_Level_2_Name_Tree.setCurrentIndex(index)
-        self.ui.comboBox_Level_2_Name_Tree.blockSignals(False)
-        
-        name = self.ui.comboBox_Level_2_Name_Tree.currentText()
-        self._on_tree_l2_changed(name)
-
-    def _sync_l3_id_to_name(self, index):
-
-        # При смене ID L3 просто пересчитывает итоговый ID
-        self._update_combined_id()
-
-    def _populate_combo_pair(self, cb_name, cb_id, items):
-        cb_name.blockSignals(True)
-        cb_id.blockSignals(True)
-        cb_name.clear()
-        cb_id.clear()
-        for item in items:
-            cb_name.addItem(item["name"])
-            cb_id.addItem(item["id"])
-        cb_name.blockSignals(False)
-        cb_id.blockSignals(False)
-
-    def _populate_level1(self):
-        l1_items = self.tree_data.get("level1", [])
-        self._populate_combo_pair(
-            self.ui.comboBox_Level_1_Name_Tree,
-            self.ui.comboBox_Level_1_ID_Tree,
-            l1_items
-        )
-        if l1_items:
-            self._on_tree_l1_changed(l1_items[0]["name"])
-
-    def _on_tree_l1_changed(self, name):
-        if not name: 
-            return
-            
-        name = name.strip()
-        
-        l1_items = self.tree_data.get("level1", [])
-        current_l1_data = None
-        
-        for item in l1_items:
-            if item["name"] == name:
-                current_l1_data = item
-                idx = self.ui.comboBox_Level_1_ID_Tree.findText(item["id"])
-                if idx >= 0: 
-                    self.ui.comboBox_Level_1_ID_Tree.blockSignals(True)
-                    self.ui.comboBox_Level_1_ID_Tree.setCurrentIndex(idx)
-                    self.ui.comboBox_Level_1_ID_Tree.blockSignals(False)
-                break
-                
-        l2_items = current_l1_data.get("level2", []) if current_l1_data else []
-        
-        self._populate_combo_pair(
-            self.ui.comboBox_Level_2_Name_Tree,
-            self.ui.comboBox_Level_2_ID_Tree,
-            l2_items
-        )
-        
-        self.ui.comboBox_Level_3_Name_Tree.clear()
-        self.ui.comboBox_Level_3_ID_Tree_3.clear()
-        
-        # Вызывает обновление UDP состояния
-        self._update_udp_state()
-
-        if l2_items:
-            self._on_tree_l2_changed(l2_items[0]["name"])
-        else:
-            self._update_combined_id()
-
-    def _on_tree_l2_changed(self, name):
-        if not name: 
-            self._update_combined_id()
-            return
-            
-        l1_name = self.ui.comboBox_Level_1_Name_Tree.currentText()
-        l1_items = self.tree_data.get("level1", [])
-        l3_items = []
-        
-        for l1 in l1_items:
-            if l1["name"] == l1_name:
-                for l2 in l1.get("level2", []):
-                    if l2["name"] == name:
-                        idx = self.ui.comboBox_Level_2_ID_Tree.findText(l2["id"])
-                        if idx >= 0: 
-                            self.ui.comboBox_Level_2_ID_Tree.blockSignals(True)
-                            self.ui.comboBox_Level_2_ID_Tree.setCurrentIndex(idx)
-                            self.ui.comboBox_Level_2_ID_Tree.blockSignals(False)
-                        l3_items = l2.get("level3", [])
-                        break
-                        
-        self._populate_combo_pair(
-            self.ui.comboBox_Level_3_Name_Tree,
-            self.ui.comboBox_Level_3_ID_Tree_3,
-            l3_items
-        )
-        self._update_combined_id()
-
     def _update_combined_id(self):
 
-        # Склеивает ID в реальном времени и сохраняет эталон
-        l1_id = self.ui.comboBox_Level_1_ID_Tree.currentText().strip()
-        l2_id = self.ui.comboBox_Level_2_ID_Tree.currentText().strip()
-        l3_id = self.ui.comboBox_Level_3_ID_Tree_3.currentText().strip()
+        # Склеивает ID в обратном порядке: L3 + L2 + L1
+        l1 = self.ui.comboBox_Level_1_ID_Tree.currentText().strip()
+        l2 = self.ui.comboBox_Level_2_ID_Tree.currentText().strip()
+        l3 = self.ui.comboBox_Level_3_ID_Tree_3.currentText().strip()
         
-        ids = []
-        if l1_id:
-            ids.append(l1_id)
-            if l2_id:
-                ids.append(l2_id)
-                if l3_id:
-                    ids.append(l3_id)
-                    
-        combined = "".join(ids)
+        # Собирает в обратном порядке: L3 -> L2 -> L1
+        # Пропуск пустых значения
+        parts = []
+        if l3: parts.append(l3)
+        if l2: parts.append(l2)
+        if l1: parts.append(l1)
         
-        # Обновляет поле, блокируя сигналы, чтобы не сбить эталон
+        combined = "".join(parts)
+        
+        # Обновляет поле ID
         self.ui.plainText_ID_Tree.blockSignals(True)
         self.ui.plainText_ID_Tree.setPlainText(combined)
         self.ui.plainText_ID_Tree.blockSignals(False)
         
-        # Сохраняет эталон для последующего сравнения
+        # Сохраняет эталон (тоже перевёрнутый, чтобы сравнение в Load/Reset работало)
         self.tree_reference_id = combined
 
-    def _get_tree_ids(self) -> tuple[str, str, str]:
-        l1_id = self.ui.comboBox_Level_1_ID_Tree.currentText()
-        l2_id = self.ui.comboBox_Level_2_ID_Tree.currentText()
-        l3_id = self.ui.comboBox_Level_3_ID_Tree_3.currentText()
-        return l1_id, l2_id, l3_id
-
     def select_file_tree(self):
-        full_path, display_path = FileSelector.select_firmware_file(
-            self, "Выберите файл прошивки (Tree Mode)"
-        )
+        full_path, display_path = FileSelector.select_firmware_file(self, "Выберите файл прошивки (Tree Mode)")
         if full_path:
             self.tree_file_path = full_path
             self.ui.path_Tree.setPlainText(display_path)
 
     def _build_tree_command_args(self, file_or_reset: str) -> list:
-
-        # Теперь берет ID из поля (учитывая ручные правки)
         combined_id = self.ui.plainText_ID_Tree.toPlainText().strip()
         if not combined_id:
-            raise ValueError("Не указан итоговый ID")
-            
+            raise ValueError("Не выбран ни один уровень")
         port = self.ui.plainText_Port_Tree.toPlainText().strip()
         ip = self.ui.plainTextIP_Tree.toPlainText().strip()
-        
         args = [combined_id, port, file_or_reset]
         if ip and ip.lower() != "none":
             args.append(ip)
@@ -425,41 +399,31 @@ class EasyLoaderWindow(QMainWindow):
         if not getattr(self, "tree_file_path", None):
             QMessageBox.warning(self, "Ошибка", "Файл прошивки не выбран")
             return
-            
         port = self.ui.plainText_Port_Tree.toPlainText().strip()
         if not port:
-            QMessageBox.warning(self, "Ошибка", "Не указан Port.")
+            QMessageBox.warning(self, "Ошибка", "Не указан Port")
             return
-
+            
         current_id = self.ui.plainText_ID_Tree.toPlainText().strip()
-        current_ip = self.ui.plainTextIP_Tree.toPlainText().strip()
-
-        # Проверка обязательного IP
-        if getattr(self, 'tree_ip_required', False) and not current_ip:
+        if getattr(self, 'tree_ip_required', False) and not self.ui.plainTextIP_Tree.toPlainText().strip():
             QMessageBox.warning(self, "Ошибка", "Для этой платы требуется указать IP")
             return
-
-        # Предупреждение об измененном ID
+            
         ref_id = getattr(self, 'tree_reference_id', '')
-        if current_id != ref_id:
+        if current_id != ref_id and ref_id:
             reply = QMessageBox.warning(
-                self,
-                "⚠️ ID изменен вручную",
-                f"Рекомендованный ID: {ref_id}\n"
-                f"Текущий ID: {current_id}\n\n"
-                f"Запустить загрузку с измененным ID?",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
+                self, "⚠️ ID изменен вручную",
+                f"Рекомендованный ID: {ref_id}\nТекущий ID: {current_id}\n\nЗапустить с измененным ID?",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
             )
             if reply != QMessageBox.Yes:
                 return
-            
+                
         try:
             args = self._build_tree_command_args(self.tree_file_path)
         except ValueError as e:
             QMessageBox.warning(self, "Ошибка", str(e))
             return
-        
         self._start_loader(self, args, "TREE LOAD")
 
     def _on_tree_reset_clicked(self):
@@ -467,53 +431,36 @@ class EasyLoaderWindow(QMainWindow):
         if not port:
             QMessageBox.warning(self, "Ошибка", "Не указан Port")
             return
-
+            
         current_id = self.ui.plainText_ID_Tree.toPlainText().strip()
-        current_ip = self.ui.plainTextIP_Tree.toPlainText().strip()
-
-        if getattr(self, 'tree_ip_required', False) and not current_ip:
+        if getattr(self, 'tree_ip_required', False) and not self.ui.plainTextIP_Tree.toPlainText().strip():
             QMessageBox.warning(self, "Ошибка", "Для этой платы требуется указать IP")
             return
-
+            
         ref_id = getattr(self, 'tree_reference_id', '')
-        if current_id != ref_id:
+        if current_id != ref_id and ref_id:
             reply = QMessageBox.warning(
-                self,
-                "⚠️ ID изменен вручную",
-                f"Рекомендованный ID: {ref_id}\n"
-                f"Текущий ID: {current_id}\n\n"
-                f"Выполнить сброс с измененным ID?",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
+                self, "⚠️ ID изменен вручную",
+                f"Рекомендованный ID: {ref_id}\nТекущий ID: {current_id}\n\nВыполнить сброс с измененным ID?",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
             )
             if reply != QMessageBox.Yes:
                 return
-            
+                
         try:
             args = self._build_tree_command_args("Reset")
         except ValueError as e:
             QMessageBox.warning(self, "Ошибка", str(e))
             return
-        
-        l1_name = self.ui.comboBox_Level_1_Name_Tree.currentText()
-        l2_name = self.ui.comboBox_Level_2_Name_Tree.currentText()
-        l3_name = self.ui.comboBox_Level_3_Name_Tree.currentText()
-        l1_id, l2_id, l3_id = self._get_tree_ids()
-        
+            
         reply = QMessageBox.question(
             self, "⚠️ Подтверждение Reset (Tree)",
-            f"Выполнить сброс для цепочки:\n"
-            f"L1: {l1_name} ({l1_id})\n"
-            f"L2: {l2_name or '—'} ({l2_id or '—'})\n"
-            f"L3: {l3_name or '—'} ({l3_id or '—'})\n"
-            f"Итоговый ID: {current_id}\n"
-            f"Port: {port}",
+            f"Итоговый ID: {current_id}\nPort: {port}\n\nВыполнить сброс?",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No
         )
-        
         if reply == QMessageBox.Yes:
             self._start_loader(self, args, "TREE RESET")
-
+    
     # - IP Manual Mode -
 
     def _init_ip_checkboxes(self):
@@ -586,7 +533,7 @@ class EasyLoaderWindow(QMainWindow):
     @property
     def is_manual_ip_required(self) -> bool:
 
-        # Свойство-флаг для удобной проверки в других частях кода
+        # Свойство флаг для удобной проверки в других частях кода
         # Возвращает True, если в Manual Mode выбран YES (IP используется)
         return self.manual_ip_enabled
     
