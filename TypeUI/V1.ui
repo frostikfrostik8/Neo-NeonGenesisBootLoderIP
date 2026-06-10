@@ -691,7 +691,7 @@
        </property>
       </item>
      </widget>
-     <widget class="QComboBox" name="comboBox_Level_3_ID_Tree_3">
+     <widget class="QComboBox" name="comboBox_Level_3_ID_Tree">
       <property name="geometry">
        <rect>
         <x>580</x>

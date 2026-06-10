@@ -223,7 +223,7 @@ class EasyLoaderWindow(QMainWindow):
         # Синхронизация ID -> Name
         self.ui.comboBox_Level_1_ID_Tree.currentIndexChanged.connect(self._sync_l1_id_to_name)
         self.ui.comboBox_Level_2_ID_Tree.currentIndexChanged.connect(self._sync_l2_id_to_name)
-        self.ui.comboBox_Level_3_ID_Tree_3.currentIndexChanged.connect(self._sync_l3_id_to_name)
+        self.ui.comboBox_Level_3_ID_Tree.currentIndexChanged.connect(self._sync_l3_id_to_name)
 
     def _populate_level1_all(self):
 
@@ -260,7 +260,7 @@ class EasyLoaderWindow(QMainWindow):
             self.ui.comboBox_Level_2_Name_Tree.clear()
             self.ui.comboBox_Level_2_ID_Tree.clear()
             self.ui.comboBox_Level_3_Name_Tree.clear()
-            self.ui.comboBox_Level_3_ID_Tree_3.clear()
+            self.ui.comboBox_Level_3_ID_Tree.clear()
             self._update_combined_id()
             self._update_udp_state()
             return
@@ -280,7 +280,7 @@ class EasyLoaderWindow(QMainWindow):
         
         self._populate_combo_pair(self.ui.comboBox_Level_2_Name_Tree, self.ui.comboBox_Level_2_ID_Tree, children)
         self.ui.comboBox_Level_3_Name_Tree.clear()
-        self.ui.comboBox_Level_3_ID_Tree_3.clear()
+        self.ui.comboBox_Level_3_ID_Tree.clear()
         self._update_udp_state()
         self._update_combined_id()
 
@@ -288,7 +288,7 @@ class EasyLoaderWindow(QMainWindow):
         name = name.strip()
         if not name:
             self.ui.comboBox_Level_3_Name_Tree.clear()
-            self.ui.comboBox_Level_3_ID_Tree_3.clear()
+            self.ui.comboBox_Level_3_ID_Tree.clear()
             self._update_combined_id()
             return
             
@@ -305,18 +305,18 @@ class EasyLoaderWindow(QMainWindow):
                     for c in children_names if c in self.tree_data]
         children.sort(key=lambda x: x["name"])
         
-        self._populate_combo_pair(self.ui.comboBox_Level_3_Name_Tree, self.ui.comboBox_Level_3_ID_Tree_3, children)
+        self._populate_combo_pair(self.ui.comboBox_Level_3_Name_Tree, self.ui.comboBox_Level_3_ID_Tree, children)
         self._update_combined_id()
 
     def _on_tree_l3_changed(self, name):
         name = name.strip()
         if name and name in self.tree_data:
             board_id = self.tree_data[name]["id"]
-            idx = self.ui.comboBox_Level_3_ID_Tree_3.findText(board_id)
+            idx = self.ui.comboBox_Level_3_ID_Tree.findText(board_id)
             if idx >= 0:
-                self.ui.comboBox_Level_3_ID_Tree_3.blockSignals(True)
-                self.ui.comboBox_Level_3_ID_Tree_3.setCurrentIndex(idx)
-                self.ui.comboBox_Level_3_ID_Tree_3.blockSignals(False)
+                self.ui.comboBox_Level_3_ID_Tree.blockSignals(True)
+                self.ui.comboBox_Level_3_ID_Tree.setCurrentIndex(idx)
+                self.ui.comboBox_Level_3_ID_Tree.blockSignals(False)
         self._update_combined_id()
 
     def _sync_l1_id_to_name(self, index):
@@ -359,7 +359,7 @@ class EasyLoaderWindow(QMainWindow):
         # Склеивает ID в обратном порядке: L3 + L2 + L1
         l1 = self.ui.comboBox_Level_1_ID_Tree.currentText().strip()
         l2 = self.ui.comboBox_Level_2_ID_Tree.currentText().strip()
-        l3 = self.ui.comboBox_Level_3_ID_Tree_3.currentText().strip()
+        l3 = self.ui.comboBox_Level_3_ID_Tree.currentText().strip()
         
         # Собирает в обратном порядке: L3 -> L2 -> L1
         # Пропуск пустых значения
