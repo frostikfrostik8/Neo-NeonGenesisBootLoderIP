@@ -198,11 +198,12 @@ class EasyLoaderWindow(QMainWindow):
         QMessageBox.critical(self, "Ошибка", error_text)
         print(f"[ERROR] {error_text}")
 
-    # - Tree Mode -
+    # - tree mode -
 
     def _init_tree_mode(self):
-
-        # Загружает JSON-конфиг и инициализирует UI для Tree Mode
+        # Загружает плоский JSON-конфиг и инициализирует UI для Tree Mode
+        import json
+        from path_utils import get_resource_path
         
         self.tree_config_path = get_resource_path("tree_config.json")
         if os.path.exists(self.tree_config_path):
@@ -213,17 +214,57 @@ class EasyLoaderWindow(QMainWindow):
             with open(self.tree_config_path, "w", encoding="utf-8") as f:
                 json.dump(self.tree_data, f, indent=2, ensure_ascii=False)
 
+        # Настройка SpinBox ов: диапазон от -6 до 99
+        for sb in (self.ui.spinBox_Level_1_ID_Tree, self.ui.spinBox_Level_2_ID_Tree, self.ui.spinBox_Level_3_ID_Tree):
+            sb.setRange(-6, 99)
+            sb.setValue(0)
+            sb.setEnabled(False)  # Изначально заблокированы
+
         self._populate_level1_all()
         
-        # Каскадные обновления (Name -> ID)
+        # Подключения комбобоксов (выбор платы)
         self.ui.comboBox_Level_1_Name_Tree.currentTextChanged.connect(self._on_tree_l1_changed)
         self.ui.comboBox_Level_2_Name_Tree.currentTextChanged.connect(self._on_tree_l2_changed)
         self.ui.comboBox_Level_3_Name_Tree.currentTextChanged.connect(self._on_tree_l3_changed)
         
-        # Синхронизация ID -> Name
-        self.ui.comboBox_Level_1_ID_Tree.currentIndexChanged.connect(self._sync_l1_id_to_name)
-        self.ui.comboBox_Level_2_ID_Tree.currentIndexChanged.connect(self._sync_l2_id_to_name)
-        self.ui.comboBox_Level_3_ID_Tree.currentIndexChanged.connect(self._sync_l3_id_to_name)
+        # Подключения SpinBox ов (модификация ID в реальном времени)
+        self.ui.spinBox_Level_1_ID_Tree.valueChanged.connect(self._update_combined_id)
+        self.ui.spinBox_Level_2_ID_Tree.valueChanged.connect(self._update_combined_id)
+        self.ui.spinBox_Level_3_ID_Tree.valueChanged.connect(self._update_combined_id)
+
+    def _config_id_to_spinbox_value(self, id_str: str) -> int:
+        
+        # Преобразует ID из конфига (0-9, A-F) в значение для SpinBox
+        # 0-9 -> 0..9
+        # A-F -> -1..-6
+        
+        if not id_str:
+            return 0
+        id_str = id_str.strip().upper()
+        
+        if id_str.isdigit():
+            return int(id_str)
+        
+        # Буквы A-F -> отрицательные числа
+        mapping = {"A": -1, "B": -2, "C": -3, "D": -4, "E": -5, "F": -6}
+        return mapping.get(id_str, 0)
+
+    def _get_id_from_spinbox(self, spinbox) -> str:
+        
+        # Преобразует значение SpinBox в строку для команды
+        # Если spinbox заблокирован - возвращает пустую строку
+        # 0..99 -> "0".."99"
+        # -1..-6 -> "A".."F"
+
+        if not spinbox.isEnabled():
+            return ""
+            
+        val = spinbox.value()
+        if val >= 0:
+            return str(val)
+        else:
+            mapping = {-1: "A", -2: "B", -3: "C", -4: "D", -5: "E", -6: "F"}
+            return mapping.get(val, "")
 
     def _populate_level1_all(self):
 
@@ -233,108 +274,112 @@ class EasyLoaderWindow(QMainWindow):
             if "udp" in data:
                 root_boards.append({"name": name, "id": data["id"]})
         root_boards.sort(key=lambda x: x["name"])
-        self._populate_combo_pair(
-            self.ui.comboBox_Level_1_Name_Tree,
-            self.ui.comboBox_Level_1_ID_Tree,
-            root_boards
-        )
+        self._populate_combo_pair(self.ui.comboBox_Level_1_Name_Tree,root_boards)
 
-    def _populate_combo_pair(self, cb_name, cb_id, items):
+    def _populate_combo_pair(self, cb_name, items):
 
-        # Заполняет пару комбобоксов, добавляя пустой пункт первым
+        # Заполняет комбобокс именами, добавляя пустой пункт первым
         cb_name.blockSignals(True)
-        cb_id.blockSignals(True)
         cb_name.clear()
-        cb_id.clear()
-        cb_name.addItem("")
-        cb_id.addItem("")
+        cb_name.addItem("")  # Пустой пункт
         for item in items:
             cb_name.addItem(item["name"])
-            cb_id.addItem(item["id"])
         cb_name.blockSignals(False)
-        cb_id.blockSignals(False)
 
     def _on_tree_l1_changed(self, name):
         name = name.strip()
+        
         if not name:
+
+            # Плата не выбрана - блокирует SpinBox и очищаем каскад
+            self.ui.spinBox_Level_1_ID_Tree.blockSignals(True)
+            self.ui.spinBox_Level_1_ID_Tree.setValue(0)
+            self.ui.spinBox_Level_1_ID_Tree.setEnabled(False)
+            self.ui.spinBox_Level_1_ID_Tree.blockSignals(False)
+            
             self.ui.comboBox_Level_2_Name_Tree.clear()
-            self.ui.comboBox_Level_2_ID_Tree.clear()
             self.ui.comboBox_Level_3_Name_Tree.clear()
-            self.ui.comboBox_Level_3_ID_Tree.clear()
             self._update_combined_id()
             self._update_udp_state()
             return
         
-        if name in self.tree_data:
-            board_id = self.tree_data[name]["id"]
-            idx = self.ui.comboBox_Level_1_ID_Tree.findText(board_id)
-            if idx >= 0:
-                self.ui.comboBox_Level_1_ID_Tree.blockSignals(True)
-                self.ui.comboBox_Level_1_ID_Tree.setCurrentIndex(idx)
-                self.ui.comboBox_Level_1_ID_Tree.blockSignals(False)
+        # Получает ID из конфига и устанавливаем в SpinBox
+        config_id = self.tree_data.get(name, {}).get("id", "0")
+        spinbox_val = self._config_id_to_spinbox_value(config_id)
         
+        self.ui.spinBox_Level_1_ID_Tree.blockSignals(True)
+        self.ui.spinBox_Level_1_ID_Tree.setValue(spinbox_val)
+        self.ui.spinBox_Level_1_ID_Tree.setEnabled(True)
+        self.ui.spinBox_Level_1_ID_Tree.blockSignals(False)
+        
+        # Заполняет L2 доступными дочерними платами
         children_names = self.tree_data.get(name, {}).get("children", [])
         children = [{"name": c, "id": self.tree_data[c]["id"]} 
                     for c in children_names if c in self.tree_data]
         children.sort(key=lambda x: x["name"])
         
-        self._populate_combo_pair(self.ui.comboBox_Level_2_Name_Tree, self.ui.comboBox_Level_2_ID_Tree, children)
+        self._populate_combo_pair(self.ui.comboBox_Level_2_Name_Tree, children)
         self.ui.comboBox_Level_3_Name_Tree.clear()
-        self.ui.comboBox_Level_3_ID_Tree.clear()
+        
         self._update_udp_state()
         self._update_combined_id()
 
     def _on_tree_l2_changed(self, name):
         name = name.strip()
+        
         if not name:
+            self.ui.spinBox_Level_2_ID_Tree.blockSignals(True)
+            self.ui.spinBox_Level_2_ID_Tree.setValue(0)
+            self.ui.spinBox_Level_2_ID_Tree.setEnabled(False)
+            self.ui.spinBox_Level_2_ID_Tree.blockSignals(False)
+            
             self.ui.comboBox_Level_3_Name_Tree.clear()
-            self.ui.comboBox_Level_3_ID_Tree.clear()
             self._update_combined_id()
             return
-            
-        if name in self.tree_data:
-            board_id = self.tree_data[name]["id"]
-            idx = self.ui.comboBox_Level_2_ID_Tree.findText(board_id)
-            if idx >= 0:
-                self.ui.comboBox_Level_2_ID_Tree.blockSignals(True)
-                self.ui.comboBox_Level_2_ID_Tree.setCurrentIndex(idx)
-                self.ui.comboBox_Level_2_ID_Tree.blockSignals(False)
         
+        # ID из конфига -> SpinBox
+        config_id = self.tree_data.get(name, {}).get("id", "0")
+        spinbox_val = self._config_id_to_spinbox_value(config_id)
+        
+        self.ui.spinBox_Level_2_ID_Tree.blockSignals(True)
+        self.ui.spinBox_Level_2_ID_Tree.setValue(spinbox_val)
+        self.ui.spinBox_Level_2_ID_Tree.setEnabled(True)
+        self.ui.spinBox_Level_2_ID_Tree.blockSignals(False)
+        
+        # Заполняет L3
         children_names = self.tree_data.get(name, {}).get("children", [])
         children = [{"name": c, "id": self.tree_data[c]["id"]} 
                     for c in children_names if c in self.tree_data]
         children.sort(key=lambda x: x["name"])
         
-        self._populate_combo_pair(self.ui.comboBox_Level_3_Name_Tree, self.ui.comboBox_Level_3_ID_Tree, children)
+        self._populate_combo_pair(self.ui.comboBox_Level_3_Name_Tree, children)
         self._update_combined_id()
 
     def _on_tree_l3_changed(self, name):
         name = name.strip()
-        if name and name in self.tree_data:
-            board_id = self.tree_data[name]["id"]
-            idx = self.ui.comboBox_Level_3_ID_Tree.findText(board_id)
-            if idx >= 0:
-                self.ui.comboBox_Level_3_ID_Tree.blockSignals(True)
-                self.ui.comboBox_Level_3_ID_Tree.setCurrentIndex(idx)
-                self.ui.comboBox_Level_3_ID_Tree.blockSignals(False)
-        self._update_combined_id()
-
-    def _sync_l1_id_to_name(self, index):
-        self.ui.comboBox_Level_1_Name_Tree.blockSignals(True)
-        self.ui.comboBox_Level_1_Name_Tree.setCurrentIndex(index)
-        self.ui.comboBox_Level_1_Name_Tree.blockSignals(False)
-        self._on_tree_l1_changed(self.ui.comboBox_Level_1_Name_Tree.currentText())
-
-    def _sync_l2_id_to_name(self, index):
-        self.ui.comboBox_Level_2_Name_Tree.blockSignals(True)
-        self.ui.comboBox_Level_2_Name_Tree.setCurrentIndex(index)
-        self.ui.comboBox_Level_2_Name_Tree.blockSignals(False)
-        self._on_tree_l2_changed(self.ui.comboBox_Level_2_Name_Tree.currentText())
-
-    def _sync_l3_id_to_name(self, index):
+        
+        if not name:
+            self.ui.spinBox_Level_3_ID_Tree.blockSignals(True)
+            self.ui.spinBox_Level_3_ID_Tree.setValue(0)
+            self.ui.spinBox_Level_3_ID_Tree.setEnabled(False)
+            self.ui.spinBox_Level_3_ID_Tree.blockSignals(False)
+            self._update_combined_id()
+            return
+        
+        # ID из конфига -> SpinBox
+        config_id = self.tree_data.get(name, {}).get("id", "0")
+        spinbox_val = self._config_id_to_spinbox_value(config_id)
+        
+        self.ui.spinBox_Level_3_ID_Tree.blockSignals(True)
+        self.ui.spinBox_Level_3_ID_Tree.setValue(spinbox_val)
+        self.ui.spinBox_Level_3_ID_Tree.setEnabled(True)
+        self.ui.spinBox_Level_3_ID_Tree.blockSignals(False)
+        
         self._update_combined_id()
 
     def _update_udp_state(self):
+
+        # Управляет блокировкой поля IP на основе UDP флага L1
         l1_name = self.ui.comboBox_Level_1_Name_Tree.currentText().strip()
         udp_flag = "none"
         if l1_name and l1_name in self.tree_data:
@@ -356,13 +401,12 @@ class EasyLoaderWindow(QMainWindow):
 
     def _update_combined_id(self):
 
-        # Склеивает ID в обратном порядке: L3 + L2 + L1
-        l1 = self.ui.comboBox_Level_1_ID_Tree.currentText().strip()
-        l2 = self.ui.comboBox_Level_2_ID_Tree.currentText().strip()
-        l3 = self.ui.comboBox_Level_3_ID_Tree.currentText().strip()
+        # Склеивает ID всех уровней (L3 + L2 + L1) в реальном времени
+        l1 = self._get_id_from_spinbox(self.ui.spinBox_Level_1_ID_Tree)
+        l2 = self._get_id_from_spinbox(self.ui.spinBox_Level_2_ID_Tree)
+        l3 = self._get_id_from_spinbox(self.ui.spinBox_Level_3_ID_Tree)
         
-        # Собирает в обратном порядке: L3 -> L2 -> L1
-        # Пропуск пустых значения
+        # Переворачиваем: L3 -> L2 -> L1
         parts = []
         if l3: parts.append(l3)
         if l2: parts.append(l2)
@@ -370,13 +414,17 @@ class EasyLoaderWindow(QMainWindow):
         
         combined = "".join(parts)
         
-        # Обновляет поле ID
         self.ui.plainText_ID_Tree.blockSignals(True)
         self.ui.plainText_ID_Tree.setPlainText(combined)
         self.ui.plainText_ID_Tree.blockSignals(False)
         
-        # Сохраняет эталон (тоже перевёрнутый, чтобы сравнение в Load/Reset работало)
         self.tree_reference_id = combined
+
+    def _get_tree_ids(self) -> tuple[str, str, str]:
+        l1 = self._get_id_from_spinbox(self.ui.spinBox_Level_1_ID_Tree)
+        l2 = self._get_id_from_spinbox(self.ui.spinBox_Level_2_ID_Tree)
+        l3 = self._get_id_from_spinbox(self.ui.spinBox_Level_3_ID_Tree)
+        return l1, l2, l3
 
     def select_file_tree(self):
         full_path, display_path = FileSelector.select_firmware_file(self, "Выберите файл прошивки (Tree Mode)")
@@ -410,14 +458,8 @@ class EasyLoaderWindow(QMainWindow):
             return
             
         ref_id = getattr(self, 'tree_reference_id', '')
-        if current_id != ref_id and ref_id:
-            reply = QMessageBox.warning(
-                self, "⚠️ ID изменен вручную",
-                f"Рекомендованный ID: {ref_id}\nТекущий ID: {current_id}\n\nЗапустить с измененным ID?",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
-            )
-            if reply != QMessageBox.Yes:
-                return
+        # plainText_ID_Tree обновляется автоматически из SpinBox, 
+        # так что предупреждение о "ручном изменении" не нужно
                 
         try:
             args = self._build_tree_command_args(self.tree_file_path)
@@ -436,16 +478,6 @@ class EasyLoaderWindow(QMainWindow):
         if getattr(self, 'tree_ip_required', False) and not self.ui.plainTextIP_Tree.toPlainText().strip():
             QMessageBox.warning(self, "Ошибка", "Для этой платы требуется указать IP")
             return
-            
-        ref_id = getattr(self, 'tree_reference_id', '')
-        if current_id != ref_id and ref_id:
-            reply = QMessageBox.warning(
-                self, "⚠️ ID изменен вручную",
-                f"Рекомендованный ID: {ref_id}\nТекущий ID: {current_id}\n\nВыполнить сброс с измененным ID?",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
-            )
-            if reply != QMessageBox.Yes:
-                return
                 
         try:
             args = self._build_tree_command_args("Reset")
@@ -453,9 +485,19 @@ class EasyLoaderWindow(QMainWindow):
             QMessageBox.warning(self, "Ошибка", str(e))
             return
             
+        l1_name = self.ui.comboBox_Level_1_Name_Tree.currentText()
+        l2_name = self.ui.comboBox_Level_2_Name_Tree.currentText()
+        l3_name = self.ui.comboBox_Level_3_Name_Tree.currentText()
+        l1_id, l2_id, l3_id = self._get_tree_ids()
+        
         reply = QMessageBox.question(
             self, "⚠️ Подтверждение Reset (Tree)",
-            f"Итоговый ID: {current_id}\nPort: {port}\n\nВыполнить сброс?",
+            f"Выполнить сброс для цепочки:\n"
+            f"L1: {l1_name} ({l1_id})\n"
+            f"L2: {l2_name or '—'} ({l2_id or '—'})\n"
+            f"L3: {l3_name or '—'} ({l3_id or '—'})\n"
+            f"Итоговый ID: {current_id}\n"
+            f"Port: {port}",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No
         )
         if reply == QMessageBox.Yes:
