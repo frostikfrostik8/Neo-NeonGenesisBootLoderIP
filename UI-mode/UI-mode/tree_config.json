@@ -2,7 +2,7 @@
   "LAN-RA": {
     "id": "f",
     "udp": "required",
-    "children": ["CHADEMO", "CCS", "GBT", "CCS", "GBT", "DIDO"]
+    "children": ["CHADEMO", "CCS", "GBT", "CCS2", "GBT2", "DIDO"]
   },
   "CHADEMO": {
     "id": "2",
