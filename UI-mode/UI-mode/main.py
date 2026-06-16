@@ -291,7 +291,7 @@ class EasyLoaderWindow(QMainWindow):
         
         if not name:
 
-            # Плата не выбрана - блокирует SpinBox и очищаем каскад
+            # Плата не выбрана - блокирует SpinBox и очищает каскад
             self.ui.spinBox_Level_1_ID_Tree.blockSignals(True)
             self.ui.spinBox_Level_1_ID_Tree.setValue(0)
             self.ui.spinBox_Level_1_ID_Tree.setEnabled(False)
@@ -314,8 +314,7 @@ class EasyLoaderWindow(QMainWindow):
         
         # Заполняет L2 доступными дочерними платами
         children_names = self.tree_data.get(name, {}).get("children", [])
-        children = [{"name": c, "id": self.tree_data[c]["id"]} 
-                    for c in children_names if c in self.tree_data]
+        children = [{"name": c, "id": self.tree_data[c]["id"]} for c in children_names if c in self.tree_data]
         children.sort(key=lambda x: x["name"])
         
         self._populate_combo_pair(self.ui.comboBox_Level_2_Name_Tree, children)
@@ -348,8 +347,7 @@ class EasyLoaderWindow(QMainWindow):
         
         # Заполняет L3
         children_names = self.tree_data.get(name, {}).get("children", [])
-        children = [{"name": c, "id": self.tree_data[c]["id"]} 
-                    for c in children_names if c in self.tree_data]
+        children = [{"name": c, "id": self.tree_data[c]["id"]} for c in children_names if c in self.tree_data]
         children.sort(key=lambda x: x["name"])
         
         self._populate_combo_pair(self.ui.comboBox_Level_3_Name_Tree, children)
