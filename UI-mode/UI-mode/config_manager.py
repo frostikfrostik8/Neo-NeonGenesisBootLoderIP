@@ -3,7 +3,6 @@
 # Управляет состоянием Safety mode
 
 import configparser
-import configparser
 import os
 from path_utils import get_resource_path
 
