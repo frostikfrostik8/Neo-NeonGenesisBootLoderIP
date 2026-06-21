@@ -4,3 +4,4 @@ nuitka-crash-report.xml
 main.dll
 /UI-mode/UI-mode-build
 .venvs
+/.venv
