@@ -442,7 +442,7 @@ class EasyLoaderWindow(QMainWindow):
 
     def _update_combined_id(self):
 
-        # Собирает ID по правилам блок-схемы: L3 + ADDR(если L3 требует) + L2 + ADDR(если L2 требует) + L1
+        # Собирает ID
         cb_l1 = getattr(self.ui, 'comboBox_Level_1_Name_Tree', None)
         cb_l2 = getattr(self.ui, 'comboBox_Level_2_Name_Tree', None)
         sb_l1 = getattr(self.ui, 'spinBox_Level_1_ID_Tree', None)
@@ -452,46 +452,55 @@ class EasyLoaderWindow(QMainWindow):
         l1_name = cb_l1.currentText().strip() if cb_l1 else ""
         l2_name = cb_l2.currentText().strip() if cb_l2 else ""
         
-        # Получаем ID из спинбоксов
-        l1_hex = format(sb_l1.value(), 'X') if (sb_l1 and sb_l1.isEnabled()) else ""
-        l2_hex = format(sb_l2.value(), 'X') if (sb_l2 and sb_l2.isEnabled()) else ""
-        
-        # L3 только если активен и видим
-        l3_hex = ""
-        l3_requires_addr = False
-        if sb_l3 and sb_l3.isEnabled() and sb_l3.isVisible():
-            l3_hex = format(sb_l3.value(), 'X')
-
-            # Проверяет требует ли L3 addr
-            if l2_name:
+        if not l1_name:
+            combined = ""
+        else:
+            # Получает ID L1
+            l1_hex = format(sb_l1.value(), 'X') if sb_l1 else ""
+            
+            if not l2_name:
+                # Только L1
+                combined = l1_hex
+            else:
+                # Получает конфиг L2
                 l2_data = self.tree_data.get("level2", {}).get(l2_name, {})
+                l2_id = l2_data.get("id", "0")
                 l3_config = l2_data.get("l3")
-                if l3_config and l3_config.get("type") == "addr":
-                    l3_requires_addr = True
-        
-        # Проверяет требует ли L2 addr
-        l2_requires_addr = False
-        if l2_name:
-            l2_data = self.tree_data.get("level2", {}).get(l2_name, {})
-            if l2_data.get("id") == "spinbox":
-                l2_requires_addr = True
-        
-        # Собирает ID: L3 + ADDR(если L3 требует) + L2 + ADDR(если L2 требует) + L1
-        parts = []
-        if l3_hex:
-            parts.append(l3_hex)
-            if l3_requires_addr:
-                parts.append(l2_hex)  # ADDR от L2 спинбокса
-        if l2_hex and not l3_requires_addr:
-            parts.append(l2_hex)
-            if l2_requires_addr:
+                
+                # Получает ID L2
+                l2_hex = format(sb_l2.value(), 'X') if sb_l2 else ""
+                
+                # Проверяет тип L3
+                if l3_config:
+                    l3_type = l3_config.get("type")
+                    
+                    if l3_type == "addr":
 
-                # Для ADDR типа L2, addr уже в l2_hex (спинбокс)
-                pass
-        if l1_hex:
-            parts.append(l1_hex)
-        
-        combined = "".join(parts)
+                        # L3 = ADDR (берем из spinBox_Level_3_ID_Tree)
+                        l3_hex = format(sb_l3.value(), 'X') if (sb_l3 and sb_l3.isVisible()) else ""
+
+                        # ID = L3 + ADDR + L2 + L1 = l3_hex + l2_hex + l1_hex
+                        # Но l3_hex это и есть ADDR!
+                        combined = l2_hex + l3_hex + l1_hex
+                    elif l3_type == "fixed":
+
+                        # L3 = фиксированное значение
+                        l3_hex = l3_config.get("value", "0")
+
+                        # ID = L3 + L2 + L1
+                        combined = l3_hex + l2_hex + l1_hex
+                    elif l3_type == "x":
+
+                        # L3 = X селектор (1-8)
+                        l3_hex = format(sb_l3.value(), 'X') if (sb_l3 and sb_l3.isVisible()) else ""
+
+                        # ID = L3 + L2 + L1
+                        combined = l3_hex + l2_hex + l1_hex
+                else:
+                    
+                    # L3 не нужен
+                    # ID = L2 + L1
+                    combined = l2_hex + l1_hex
         
         plainText_ID = getattr(self.ui, 'plainText_ID_Tree', None)
         if plainText_ID:
