@@ -198,11 +198,12 @@ class EasyLoaderWindow(QMainWindow):
         QMessageBox.critical(self, "Ошибка", error_text)
         print(f"[ERROR] {error_text}")
 
-        # - TREE MODE -
+    # - TREE MODE -
 
     def _init_tree_mode(self):
 
         # Загружает конфиг и инициализирует UI для Tree Mode
+        import json
         from path_utils import get_resource_path
         
         self.tree_config_path = get_resource_path("tree_config.json")
@@ -214,17 +215,12 @@ class EasyLoaderWindow(QMainWindow):
             with open(self.tree_config_path, "w", encoding="utf-8") as f:
                 json.dump(self.tree_data, f, indent=2, ensure_ascii=False)
 
-        # Безопасно скрываем L3 Name и стрелки (если они существуют)
-        for widget_name in [
-            'comboBox_Level_3_Name_Tree',
-            'label_pointer_Tree_4',
-            'label_pointer_Tree_5'
-        ]:
-            widget = getattr(self.ui, widget_name, None)
-            if widget:
-                widget.setVisible(False)
+        # Скрывает L3 Name комбобокс (не используется в новой логике)
+        cb_l3_name = getattr(self.ui, 'comboBox_Level_3_Name_Tree', None)
+        if cb_l3_name:
+            cb_l3_name.setVisible(False)
         
-        # Настраиваем spinbox'ы (range 0-15 для hex)
+        # Настраивает спинбоксы (range 0-15 для hex)
         for sb_name in [
             'spinBox_Level_1_ID_Tree',
             'spinBox_Level_2_ID_Tree',
@@ -236,13 +232,12 @@ class EasyLoaderWindow(QMainWindow):
                 sb.setValue(0)
                 sb.setEnabled(False)
         
-        # Заполняем L1
+        # Заполняет L1
         self._populate_level1()
         
-        # Подключения (безопасные)
+        # Подключения
         cb_l1 = getattr(self.ui, 'comboBox_Level_1_Name_Tree', None)
         cb_l2 = getattr(self.ui, 'comboBox_Level_2_Name_Tree', None)
-        cb_l3 = getattr(self.ui, 'comboBox_Level_3_Name_Tree', None)
         sb_l2 = getattr(self.ui, 'spinBox_Level_2_ID_Tree', None)
         sb_l3 = getattr(self.ui, 'spinBox_Level_3_ID_Tree', None)
         
@@ -250,36 +245,10 @@ class EasyLoaderWindow(QMainWindow):
             cb_l1.currentTextChanged.connect(self._on_tree_l1_changed)
         if cb_l2:
             cb_l2.currentTextChanged.connect(self._on_tree_l2_changed)
-        if cb_l3:
-            cb_l3.currentTextChanged.connect(self._on_tree_l3_changed)
         if sb_l2:
-            sb_l2.valueChanged.connect(self._on_l2_spinbox_changed)
+            sb_l2.valueChanged.connect(self._update_combined_id)
         if sb_l3:
             sb_l3.valueChanged.connect(self._update_combined_id)
-
-            # Скрывает L3 Name и стрелки (не нужны в новой логике)
-            self.ui.comboBox_Level_3_Name_Tree.setVisible(False)
-            self.ui.label_pointer_Tree_4.setVisible(False)
-            self.ui.label_pointer_Tree_5.setVisible(False)
-            
-            # Настраивает spinboxы (range 0-15 для hex)
-            for sb in (self.ui.spinBox_Level_1_ID_Tree, 
-                    self.ui.spinBox_Level_2_ID_Tree, 
-                    self.ui.spinBox_Level_3_ID_Tree):
-                sb.setRange(0, 15)
-                sb.setValue(0)
-                sb.setEnabled(False)
-            
-            self.ui.spinBox_Level_3_ID_Tree.setVisible(False)
-            
-            # Заполняет L1
-            self._populate_level1()
-            
-            # Подключения
-            self.ui.comboBox_Level_1_Name_Tree.currentTextChanged.connect(self._on_tree_l1_changed)
-            self.ui.comboBox_Level_2_Name_Tree.currentTextChanged.connect(self._on_tree_l2_changed)
-            self.ui.spinBox_Level_2_ID_Tree.valueChanged.connect(self._on_l2_spinbox_changed)
-            self.ui.spinBox_Level_3_ID_Tree.valueChanged.connect(self._update_combined_id)
 
     def _populate_level1(self):
 
