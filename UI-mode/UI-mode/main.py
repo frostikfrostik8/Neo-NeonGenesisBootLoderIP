@@ -456,7 +456,7 @@ class EasyLoaderWindow(QMainWindow):
             combined = ""
         else:
             # Получает ID L1
-            l1_hex = format(sb_l1.value(), 'X') if sb_l1 else ""
+            l1_hex = format(sb_l1.value(), 'x') if sb_l1 else ""
             
             if not l2_name:
                 # Только L1
@@ -468,7 +468,7 @@ class EasyLoaderWindow(QMainWindow):
                 l3_config = l2_data.get("l3")
                 
                 # Получает ID L2
-                l2_hex = format(sb_l2.value(), 'X') if sb_l2 else ""
+                l2_hex = format(sb_l2.value(), 'x') if sb_l2 else ""
                 
                 # Проверяет тип L3
                 if l3_config:
@@ -477,7 +477,7 @@ class EasyLoaderWindow(QMainWindow):
                     if l3_type == "addr":
 
                         # L3 = ADDR (берем из spinBox_Level_3_ID_Tree)
-                        l3_hex = format(sb_l3.value(), 'X') if (sb_l3 and sb_l3.isVisible()) else ""
+                        l3_hex = format(sb_l3.value(), 'x') if (sb_l3 and sb_l3.isVisible()) else ""
 
                         # ID = L3 + ADDR + L2 + L1 = l3_hex + l2_hex + l1_hex
                         # Но l3_hex это и есть ADDR!
@@ -497,7 +497,7 @@ class EasyLoaderWindow(QMainWindow):
                         # ID = L3 + L2 + L1
                         combined = l3_hex + l2_hex + l1_hex
                 else:
-                    
+
                     # L3 не нужен
                     # ID = L2 + L1
                     combined = l2_hex + l1_hex
