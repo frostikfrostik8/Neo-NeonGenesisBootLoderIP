@@ -1,82 +1,41 @@
 {
-  "LAN-RA": {
-    "id": "f",
-    "udp": "required",
-    "children": ["CHADEMO", "CCS", "GBT", "CCS2", "GBT2", "DIDO"]
+  "level1": {
+    "LAN-RA": {"id": "f", "udp": "required"},
+    "TYPE2": {"id": "1", "udp": "optional"},
+    "CHADEMO": {"id": "2", "udp": "none"},
+    "CCS": {"id": "3", "udp": "none"},
+    "TYPE1": {"id": "4", "udp": "optional"},
+    "GBT": {"id": "5", "udp": "none"},
+    "CCS2": {"id": "6", "udp": "none"},
+    "2CAN": {"id": "7", "udp": "none"},
+    "GBT2": {"id": "8", "udp": "none"}
   },
-  "CHADEMO": {
-    "id": "2",
-    "udp": "none",
-    "children": ["TRANSCEIVER", "EEPROM", "DIDO", "BM", "2CAN", "LCSC", "BLCC"]
+  "level2": {
+    "ADDR": {"id": "spinbox", "range": [0, 15]},
+    "LCSC": {"id": "f"},
+    "ESP32": {"id": "3", "l3": {"type": "x", "range": [1, 8]}},
+    "TRANSCEIVER": {"id": "1", "l3": {"type": "x", "range": [1, 8]}},
+    "EEPROM": {"id": "2", "l3": {"type": "x", "range": [1, 8]}},
+    "CAN_DIDO": {"id": "5", "l3": {"type": "addr", "range": [0, 15]}},
+    "CAN_BM": {"id": "6", "l3": {"type": "addr", "range": [0, 15]}},
+    "CAN_2CAN": {"id": "7", "l3": {"type": "addr", "range": [0, 15]}},
+    "CAN_LCSC": {"id": "8", "l3": {"type": "addr", "range": [0, 15]}},
+    "CAN_BLCC": {"id": "9", "l3": {"type": "addr", "range": [0, 15]}},
+    "CAN_DIDO_F": {"id": "5", "l3": {"type": "fixed", "value": "f"}},
+    "CAN_BM_F": {"id": "6", "l3": {"type": "fixed", "value": "f"}},
+    "CAN_2CAN_F": {"id": "7", "l3": {"type": "fixed", "value": "f"}},
+    "CAN_LCSC_F": {"id": "8", "l3": {"type": "fixed", "value": "f"}},
+    "CAN_BLCC_F": {"id": "9", "l3": {"type": "fixed", "value": "f"}}
   },
-  "CCS": {
-    "id": "3",
-    "udp": "none",
-    "children": ["TRANSCEIVER", "EEPROM", "DIDO", "BM", "2CAN", "LCSC", "BLCC"]
-  },
-  "GBT": {
-    "id": "5",
-    "udp": "none",
-    "children": ["TRANSCEIVER", "EEPROM", "DIDO", "BM", "2CAN", "LCSC", "BLCC"]
-  },
-  "CCS2": {
-    "id": "6",
-    "udp": "none",
-    "children": ["TRANSCEIVER", "EEPROM", "DIDO", "BM", "2CAN", "LCSC", "BLCC"]
-  },
-  "GBT2": {
-    "id": "8",
-    "udp": "none",
-    "children": ["TRANSCEIVER", "EEPROM", "DIDO", "BM", "2CAN", "LCSC", "BLCC"]
-  },
-  "TYPE-2": {
-    "id": "1",
-    "udp": "optional",
-    "children": ["ESP32", "TYPE-1"]
-  },
-  "TYPE-1": {
-    "id": "4",
-    "udp": "optional",
-    "children": ["ESP32"]
-  },
-  "TRANSCEIVER": {
-    "id": "1",
-    "udp": "none",
-    "children": []
-  },
-  "EEPROM": {
-    "id": "2",
-    "udp": "none",
-    "children": []
-  },
-  "ESP32": {
-    "id": "3",
-    "udp": "none",
-    "children": []
-  },
-  "DIDO": {
-    "id": "5",
-    "udp": "none",
-    "children": []
-  },
-  "BM": {
-    "id": "6",
-    "udp": "none",
-    "children": []
-  },
-  "2CAN": {
-    "id": "7",
-    "udp": "none",
-    "children": []
-  },
-  "LCSC": {
-    "id": "8",
-    "udp": "none",
-    "children": []
-  },
-  "BLCC": {
-    "id": "9",
-    "udp": "none",
-    "children": []
+  "compatibility": {
+    "LAN-RA": ["ADDR", "CAN_DIDO_F", "CAN_BM_F", "CAN_2CAN_F", "CAN_LCSC_F", "CAN_BLCC_F"],
+    "TYPE2": ["LCSC", "ESP32", "CAN_DIDO", "CAN_BM", "CAN_2CAN", "CAN_LCSC", "CAN_BLCC", "TRANSCEIVER", "EEPROM"],
+    "CHADEMO": ["CAN_DIDO", "CAN_BM", "CAN_2CAN", "CAN_LCSC", "CAN_BLCC", "TRANSCEIVER", "EEPROM"],
+    "CCS": ["CAN_DIDO", "CAN_BM", "CAN_2CAN", "CAN_LCSC", "CAN_BLCC", "TRANSCEIVER", "EEPROM"],
+    "TYPE1": ["LCSC", "ESP32", "CAN_DIDO", "CAN_BM", "CAN_2CAN", "CAN_LCSC", "CAN_BLCC", "TRANSCEIVER", "EEPROM"],
+    "GBT": ["CAN_DIDO", "CAN_BM", "CAN_2CAN", "CAN_LCSC", "CAN_BLCC", "TRANSCEIVER", "EEPROM"],
+    "CCS2": ["CAN_DIDO", "CAN_BM", "CAN_2CAN", "CAN_LCSC", "CAN_BLCC", "TRANSCEIVER", "EEPROM"],
+    "2CAN": ["CAN_DIDO", "CAN_BM", "CAN_2CAN", "CAN_LCSC", "CAN_BLCC", "TRANSCEIVER", "EEPROM"],
+    "GBT2": ["CAN_DIDO", "CAN_BM", "CAN_2CAN", "CAN_LCSC", "CAN_BLCC", "TRANSCEIVER", "EEPROM"]
   }
 }
