@@ -480,7 +480,7 @@ class EasyLoaderWindow(QMainWindow):
                         l3_hex = format(sb_l3.value(), 'x') if (sb_l3 and sb_l3.isVisible()) else ""
 
                         # ID = L3 + ADDR + L2 + L1 = l3_hex + l2_hex + l1_hex
-                        # Но l3_hex это и есть ADDR!
+                        # Но l3_hex это и есть ADDR
                         combined = l2_hex + l3_hex + l1_hex
                     elif l3_type == "fixed":
 
