@@ -399,8 +399,7 @@ class EasyLoaderWindow(QMainWindow):
 
     def _update_combined_id(self):
 
-        # Собирает ID по правилам блок-схемы
-
+        # Собирает ID 
         cb_l1 = getattr(self.ui, 'comboBox_Level_1_Name_Tree', None)
         cb_l2 = getattr(self.ui, 'comboBox_Level_2_Name_Tree', None)
         sb_l3 = getattr(self.ui, 'spinBox_Level_3_ID_Tree', None)
@@ -411,10 +410,12 @@ class EasyLoaderWindow(QMainWindow):
         if not l1_name:
             combined = ""
         else:
-
-            # Получение ID L1
-            l1_data = self.tree_data.get("level1", {}).get(l1_name, {})
+            # Получает ID L1
+            l1_data = self.tree_data.get(l1_name, {})
             l1_id = l1_data.get("id", "0")
+            
+            # X = ID платы L1 (кроме Lan-ra → f)
+            x_hex = "f" if l1_name == "LAN-RA" else l1_id
             
             if not l2_name:
 
@@ -422,46 +423,47 @@ class EasyLoaderWindow(QMainWindow):
                 combined = l1_id
             else:
 
-                # Получение конфига для L2
-                l2_data = self.tree_data.get("level2", {}).get(l2_name, {})
+                # Получает конфиг L2
+                l2_data = self.tree_data.get(l2_name, {})
                 l2_id = l2_data.get("id", "0")
                 
-                is_can_device = l2_name.startswith("CAN_")
-                is_lcsc = (l2_name == "LCSC" and l1_name == "LAN-RA")
+                # Проверяет тип модуля L2
+                is_can_device = l2_name in ["DIDO", "BM", "2CAN", "LCSC", "BLCC"]
+                is_lcsc_via_lanra = (l1_name == "LAN-RA" and l2_name == "LCSC")
                 
-                if is_can_device:
+                if is_can_device and not is_lcsc_via_lanra:
 
-                    # CAN-устройство CAN_ID + ADDR + X/f
-
+                    # CAN устройство (не через Lan-ra): CAN_ID + ADDR + X
                     addr_val = sb_l3.value() if (sb_l3 and sb_l3.isVisible()) else 0
                     addr_hex = format(addr_val, 'x')
-                    
-                    # X = ID платы L1 (кроме Lan-ra, для которой f)
-                    if l1_name == "LAN-RA":
-                        x_hex = "f"
-
-                    else:
-                        x_hex = l1_id
-                    
-                    # ID = CAN_ID + ADDR + X/f
                     combined = l2_id + addr_hex + x_hex
+                elif is_lcsc_via_lanra:
 
-                elif is_lcsc:
-
-                    # LCSC через Lan-ra: f + ADDR
+                    # Lan-ra -> LCSC: f + ADDR
                     addr_val = sb_l3.value() if (sb_l3 and sb_l3.isVisible()) else 0
                     addr_hex = format(addr_val, 'x')
                     combined = "f" + addr_hex
-
-                else:
-
-                    # Остальные модули: L2_ID + X/f
-                    if l1_name == "LAN-RA":
-                        x_hex = "f"
-                    else:
-                        x_hex = l1_id
+                elif l2_name == "TRANSCEIVER":
                     
-                    combined = l2_id + x_hex
+                    # Transceiver 1 + X
+                    x_val = sb_l3.value() if (sb_l3 and sb_l3.isVisible()) else 1
+                    x_hex = format(x_val, 'x')
+                    combined = "1" + x_hex
+                elif l2_name == "EEPROM":
+
+                    # EEPROM 2 + X
+                    x_val = sb_l3.value() if (sb_l3 and sb_l3.isVisible()) else 1
+                    x_hex = format(x_val, 'x')
+                    combined = "2" + x_hex
+                elif l2_name == "ESP32":
+
+                    # ESP32 3 + X
+                    x_val = sb_l3.value() if (sb_l3 and sb_l3.isVisible()) else 1
+                    x_hex = format(x_val, 'x')
+                    combined = "3" + x_hex
+                else:
+                    # Остальные просто ID модуля L2
+                    combined = l2_id
         
         plainText_ID = getattr(self.ui, 'plainText_ID_Tree', None)
         if plainText_ID:
