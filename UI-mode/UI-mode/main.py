@@ -201,8 +201,8 @@ class EasyLoaderWindow(QMainWindow):
     # - TREE MODE -
 
     def _init_tree_mode(self):
-        
-        # Загружает конфиг и инициализирует UI для Tree Mode
+
+        # Загружает плоский JSON и инициализирует UI
         import json
         from path_utils import get_resource_path
         
@@ -212,34 +212,42 @@ class EasyLoaderWindow(QMainWindow):
                 self.tree_data = json.load(f)
         else:
             self.tree_data = {}
-            with open(self.tree_config_path, "w", encoding="utf-8") as f:
-                json.dump(self.tree_data, f, indent=2, ensure_ascii=False)
-
-        # Скрывает L3 Name комбобокс (не используется)
-        cb_l3_name = getattr(self.ui, 'comboBox_Level_3_Name_Tree', None)
-        if cb_l3_name:
-            cb_l3_name.setVisible(False)
         
-        # Настраивает спинбоксы (range 0-15 для hex)
-        for sb_name in ['spinBox_Level_1_ID_Tree', 'spinBox_Level_2_ID_Tree', 'spinBox_Level_3_ID_Tree']:
-            sb = getattr(self.ui, sb_name, None)
-            if sb:
-                sb.setRange(0, 15)
-                sb.setValue(0)
-                sb.setEnabled(False)
-                sb.setVisible(False)  # Скрывает все спинбоксы по умолчанию
+        # Определяет L1 как корни
+        all_children = set()
+        for name, data in self.tree_data.items():
+            all_children.update(data.get("children", []))
+        self.l1_items = sorted([name for name in self.tree_data if name not in all_children])
+        
+        # Скрывает комбобоксы L2, L3 (заполняются динамически)
+        cb_l2 = getattr(self.ui, 'comboBox_Level_2_Name_Tree', None)
+        cb_l3 = getattr(self.ui, 'comboBox_Level_3_Name_Tree', None)
+        if cb_l2: cb_l2.setVisible(False)
+        if cb_l3: cb_l3.setVisible(False)
+        
+        # Спинбокс L3 скрыт по умолчанию
+        sb_l3 = getattr(self.ui, 'spinBox_Level_3_ID_Tree', None)
+        if sb_l3:
+            sb_l3.setVisible(False)
+            sb_l3.setRange(0, 15)
         
         # Заполняет L1
-        self._populate_level1()
+        cb_l1 = getattr(self.ui, 'comboBox_Level_1_Name_Tree', None)
+        if cb_l1:
+            cb_l1.blockSignals(True)
+            cb_l1.clear()
+            cb_l1.addItem("")
+            for name in self.l1_items:
+                cb_l1.addItem(name)
+            cb_l1.blockSignals(False)
         
         # Подключения
-        cb_l1 = getattr(self.ui, 'comboBox_Level_1_Name_Tree', None)
-        cb_l2 = getattr(self.ui, 'comboBox_Level_2_Name_Tree', None)
-        
         if cb_l1:
             cb_l1.currentTextChanged.connect(self._on_tree_l1_changed)
         if cb_l2:
             cb_l2.currentTextChanged.connect(self._on_tree_l2_changed)
+        if sb_l3:
+            sb_l3.valueChanged.connect(self._update_combined_id)
 
     def _populate_level1(self):
 
@@ -269,119 +277,83 @@ class EasyLoaderWindow(QMainWindow):
 
     def _on_tree_l1_changed(self, name):
 
-        # При смене L1 заполняет L2 из compatibility
+        # При смене L1 заполняет L2
         name = name.strip()
         cb_l2 = getattr(self.ui, 'comboBox_Level_2_Name_Tree', None)
-        sb_l2 = getattr(self.ui, 'spinBox_Level_2_ID_Tree', None)
         sb_l3 = getattr(self.ui, 'spinBox_Level_3_ID_Tree', None)
         
         if not name:
-            if cb_l2:
-                cb_l2.clear()
-            if sb_l2:
-                sb_l2.setVisible(False)
-            if sb_l3:
-                sb_l3.setVisible(False)
+            if cb_l2: cb_l2.clear()
+            if sb_l3: sb_l3.setVisible(False)
             self._update_combined_id()
             self._update_udp_state()
             return
         
-        # Заполняет L2 из compatibility
-        compat = self.tree_data.get("compatibility", {}).get(name, [])
-        level2 = self.tree_data.get("level2", {})
-        items = [{"name": mod, "id": level2[mod]["id"]} 
-                 for mod in compat if mod in level2]
-        items.sort(key=lambda x: x["name"])
-        
+        # Заполняет L2 детьми L1
+        children = self.tree_data.get(name, {}).get("children", [])
         if cb_l2:
             cb_l2.blockSignals(True)
             cb_l2.clear()
             cb_l2.addItem("")
-            for item in items:
-                cb_l2.addItem(item["name"])
+            for child in sorted(children):
+                cb_l2.addItem(child)
+            cb_l2.setVisible(True)
             cb_l2.blockSignals(False)
         
-        # Скрывает спинбоксы
-        if sb_l2:
-            sb_l2.setVisible(False)
-        if sb_l3:
-            sb_l3.setVisible(False)
+        # Скрывает L3 спинбокс пока не выбран L2
+        if sb_l3: sb_l3.setVisible(False)
         
         self._update_udp_state()
         self._update_combined_id()
 
     def _on_tree_l2_changed(self, name):
 
-        # При смене L2 настраивает спинбоксы
+        # При смене L2 настраивает спинбокс L3
         name = name.strip()
         cb_l1 = getattr(self.ui, 'comboBox_Level_1_Name_Tree', None)
-        sb_l2 = getattr(self.ui, 'spinBox_Level_2_ID_Tree', None)
         sb_l3 = getattr(self.ui, 'spinBox_Level_3_ID_Tree', None)
         
         l1_name = cb_l1.currentText().strip() if cb_l1 else ""
         
         if not name:
-            if sb_l2:
-                sb_l2.setVisible(False)
-            if sb_l3:
-                sb_l3.setVisible(False)
+            if sb_l3: sb_l3.setVisible(False)
             self._update_combined_id()
             return
         
-        # Получение конфиг модуля
-        l2_data = self.tree_data.get("level2", {}).get(name, {})
-        l2_id = l2_data.get("id", "0")
-        l3_config = l2_data.get("l3")
-        
-        # Проверяем тип L2
-        is_can_device = name.startswith("CAN_")
-        is_lcsc = (name == "LCSC" and l1_name == "LAN-RA")
-        
-        if is_can_device:
-
-            # CAN-устройство: показываем спинбокс ADDR (L3)
-            if sb_l3:
-                sb_l3.blockSignals(True)
-                sb_l3.setRange(0, 15)
-                sb_l3.setValue(0)
-                sb_l3.setEnabled(True)
+        # Настраивает спинбокс L3 по правилам блок-схемы
+        if sb_l3:
+            if l1_name == "LAN-RA":
+                if name == "LCSC":
+                    sb_l3.setRange(0, 15)  # ADDR
+                    sb_l3.setValue(0)
+                else:
+                    sb_l3.setRange(1, 3)   # X (1,2,3)
+                    sb_l3.setValue(1)
                 sb_l3.setVisible(True)
-                sb_l3.blockSignals(False)
-            if sb_l2:
-                sb_l2.setVisible(False)
-        elif is_lcsc:
-
-            # LCSC через Lan-ra: показываем спинбокс ADDR (L3)
-            if sb_l3:
-                sb_l3.blockSignals(True)
-                sb_l3.setRange(0, 15)
+            elif name in ["DIDO", "BM", "2CAN", "LCSC", "BLCC"]:
+                sb_l3.setRange(0, 15)  # ADDR
                 sb_l3.setValue(0)
-                sb_l3.setEnabled(True)
                 sb_l3.setVisible(True)
-                sb_l3.blockSignals(False)
-            if sb_l2:
-                sb_l2.setVisible(False)
-        else:
-
-            # Остальные модули: спинбоксы не нужны
-            if sb_l2:
-                sb_l2.setVisible(False)
-            if sb_l3:
+            elif name in ["TRANSCEIVER", "EEPROM", "ESP32"]:
+                sb_l3.setRange(1, 8)   # X (1-8)
+                sb_l3.setValue(1)
+                sb_l3.setVisible(True)
+            else:
                 sb_l3.setVisible(False)
         
         self._update_combined_id()
 
     def _update_udp_state(self):
 
-        # Управляет блокировкой поля IP на основе UDP флага L1
+        # Управляет блокировкой поля IP
         l1_name = getattr(self.ui, 'comboBox_Level_1_Name_Tree', None)
         if not l1_name:
             return
         
         name = l1_name.currentText().strip()
         udp_flag = "none"
-        if name and name in self.tree_data.get("level1", {}):
-            udp_flag = self.tree_data["level1"][name].get("udp", "none").lower()
+        if name and name in self.tree_data:
+            udp_flag = self.tree_data[name].get("udp", "none").lower()
             
         if udp_flag == "required":
             self.ui.plainTextIP_Tree.setEnabled(True)
@@ -399,7 +371,7 @@ class EasyLoaderWindow(QMainWindow):
 
     def _update_combined_id(self):
 
-        # Собирает ID 
+        # Формирует ID по правилам блок-схемы
         cb_l1 = getattr(self.ui, 'comboBox_Level_1_Name_Tree', None)
         cb_l2 = getattr(self.ui, 'comboBox_Level_2_Name_Tree', None)
         sb_l3 = getattr(self.ui, 'spinBox_Level_3_ID_Tree', None)
@@ -410,60 +382,28 @@ class EasyLoaderWindow(QMainWindow):
         if not l1_name:
             combined = ""
         else:
-            # Получает ID L1
-            l1_data = self.tree_data.get(l1_name, {})
-            l1_id = l1_data.get("id", "0")
-            
-            # X = ID платы L1 (кроме Lan-ra → f)
-            x_hex = "f" if l1_name == "LAN-RA" else l1_id
+            l1_id = self.tree_data.get(l1_name, {}).get("id", "0")
             
             if not l2_name:
-
-                # Только L1
                 combined = l1_id
             else:
-
-                # Получает конфиг L2
-                l2_data = self.tree_data.get(l2_name, {})
-                l2_id = l2_data.get("id", "0")
+                l2_id = self.tree_data.get(l2_name, {}).get("id", "0")
+                l3_val = sb_l3.value() if (sb_l3 and sb_l3.isVisible()) else 0
+                l3_hex = format(l3_val, 'x')
                 
-                # Проверяет тип модуля L2
-                is_can_device = l2_name in ["DIDO", "BM", "2CAN", "LCSC", "BLCC"]
-                is_lcsc_via_lanra = (l1_name == "LAN-RA" and l2_name == "LCSC")
-                
-                if is_can_device and not is_lcsc_via_lanra:
-
-                    # CAN устройство (не через Lan-ra): CAN_ID + ADDR + X
-                    addr_val = sb_l3.value() if (sb_l3 and sb_l3.isVisible()) else 0
-                    addr_hex = format(addr_val, 'x')
-                    combined = l2_id + addr_hex + x_hex
-                elif is_lcsc_via_lanra:
-
-                    # Lan-ra -> LCSC: f + ADDR
-                    addr_val = sb_l3.value() if (sb_l3 and sb_l3.isVisible()) else 0
-                    addr_hex = format(addr_val, 'x')
-                    combined = "f" + addr_hex
-                elif l2_name == "TRANSCEIVER":
-                    
-                    # Transceiver 1 + X
-                    x_val = sb_l3.value() if (sb_l3 and sb_l3.isVisible()) else 1
-                    x_hex = format(x_val, 'x')
-                    combined = "1" + x_hex
-                elif l2_name == "EEPROM":
-
-                    # EEPROM 2 + X
-                    x_val = sb_l3.value() if (sb_l3 and sb_l3.isVisible()) else 1
-                    x_hex = format(x_val, 'x')
-                    combined = "2" + x_hex
-                elif l2_name == "ESP32":
-
-                    # ESP32 3 + X
-                    x_val = sb_l3.value() if (sb_l3 and sb_l3.isVisible()) else 1
-                    x_hex = format(x_val, 'x')
-                    combined = "3" + x_hex
+                if l1_name == "LAN-RA":
+                    if l2_name == "LCSC":
+                        combined = "f" + l3_hex
+                    else:
+                        combined = l3_hex
                 else:
-                    # Остальные просто ID модуля L2
-                    combined = l2_id
+                    x_hex = l1_id
+                    if l2_name in ["DIDO", "BM", "2CAN", "LCSC", "BLCC"]:
+                        combined = l2_id + l3_hex + x_hex
+                    elif l2_name in ["TRANSCEIVER", "EEPROM", "ESP32"]:
+                        combined = l2_id + l3_hex
+                    else:
+                        combined = l2_id
         
         plainText_ID = getattr(self.ui, 'plainText_ID_Tree', None)
         if plainText_ID:
