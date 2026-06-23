@@ -201,7 +201,7 @@ class EasyLoaderWindow(QMainWindow):
     # - TREE MODE -
 
     def _init_tree_mode(self):
-
+        
         # Загружает конфиг и инициализирует UI для Tree Mode
         import json
         from path_utils import get_resource_path
@@ -220,13 +220,14 @@ class EasyLoaderWindow(QMainWindow):
         if cb_l3_name:
             cb_l3_name.setVisible(False)
         
-        # Настройка спинбоксы
+        # Настраивает спинбоксы (range 0-15 для hex)
         for sb_name in ['spinBox_Level_1_ID_Tree', 'spinBox_Level_2_ID_Tree', 'spinBox_Level_3_ID_Tree']:
             sb = getattr(self.ui, sb_name, None)
             if sb:
                 sb.setRange(0, 15)
                 sb.setValue(0)
                 sb.setEnabled(False)
+                sb.setVisible(False)  # Скрывает все спинбоксы по умолчанию
         
         # Заполняет L1
         self._populate_level1()
@@ -234,17 +235,11 @@ class EasyLoaderWindow(QMainWindow):
         # Подключения
         cb_l1 = getattr(self.ui, 'comboBox_Level_1_Name_Tree', None)
         cb_l2 = getattr(self.ui, 'comboBox_Level_2_Name_Tree', None)
-        sb_l2 = getattr(self.ui, 'spinBox_Level_2_ID_Tree', None)
-        sb_l3 = getattr(self.ui, 'spinBox_Level_3_ID_Tree', None)
         
         if cb_l1:
             cb_l1.currentTextChanged.connect(self._on_tree_l1_changed)
         if cb_l2:
             cb_l2.currentTextChanged.connect(self._on_tree_l2_changed)
-        if sb_l2:
-            sb_l2.valueChanged.connect(self._update_combined_id)
-        if sb_l3:
-            sb_l3.valueChanged.connect(self._update_combined_id)
 
     def _populate_level1(self):
 
@@ -284,25 +279,12 @@ class EasyLoaderWindow(QMainWindow):
             if cb_l2:
                 cb_l2.clear()
             if sb_l2:
-                sb_l2.setEnabled(False)
-                sb_l2.setValue(0)
+                sb_l2.setVisible(False)
             if sb_l3:
-                sb_l3.setEnabled(False)
                 sb_l3.setVisible(False)
             self._update_combined_id()
             self._update_udp_state()
             return
-        
-        # Устанавливает L1 ID (фиксированный)
-        l1_data = self.tree_data.get("level1", {}).get(name, {})
-        l1_id = l1_data.get("id", "0")
-        l1_id_val = self._hex_to_int(l1_id)
-        sb_l1 = getattr(self.ui, 'spinBox_Level_1_ID_Tree', None)
-        if sb_l1:
-            sb_l1.blockSignals(True)
-            sb_l1.setValue(l1_id_val)
-            sb_l1.setEnabled(False)
-            sb_l1.blockSignals(False)
         
         # Заполняет L2 из compatibility
         compat = self.tree_data.get("compatibility", {}).get(name, [])
@@ -319,12 +301,10 @@ class EasyLoaderWindow(QMainWindow):
                 cb_l2.addItem(item["name"])
             cb_l2.blockSignals(False)
         
-        # Сброс L2 и L3
+        # Скрывает спинбоксы
         if sb_l2:
-            sb_l2.setValue(0)
-            sb_l2.setEnabled(False)
+            sb_l2.setVisible(False)
         if sb_l3:
-            sb_l3.setEnabled(False)
             sb_l3.setVisible(False)
         
         self._update_udp_state()
@@ -332,17 +312,18 @@ class EasyLoaderWindow(QMainWindow):
 
     def _on_tree_l2_changed(self, name):
 
-        # При смене L2 настраивает L2 ID спинбокс и L3
+        # При смене L2 настраивает спинбоксы
         name = name.strip()
+        cb_l1 = getattr(self.ui, 'comboBox_Level_1_Name_Tree', None)
         sb_l2 = getattr(self.ui, 'spinBox_Level_2_ID_Tree', None)
         sb_l3 = getattr(self.ui, 'spinBox_Level_3_ID_Tree', None)
         
+        l1_name = cb_l1.currentText().strip() if cb_l1 else ""
+        
         if not name:
             if sb_l2:
-                sb_l2.setEnabled(False)
-                sb_l2.setValue(0)
+                sb_l2.setVisible(False)
             if sb_l3:
-                sb_l3.setEnabled(False)
                 sb_l3.setVisible(False)
             self._update_combined_id()
             return
@@ -352,64 +333,40 @@ class EasyLoaderWindow(QMainWindow):
         l2_id = l2_data.get("id", "0")
         l3_config = l2_data.get("l3")
         
-        # Настраивает L2 спинбокс
-        if l2_id == "spinbox":
-
-            # ADDR тип - пользователь может крутить
-            if sb_l2:
-                sb_l2.blockSignals(True)
-                sb_l2.setRange(0, 15)
-                sb_l2.setValue(0)
-                sb_l2.setEnabled(True)
-                sb_l2.blockSignals(False)
-        else:
-
-            # Фиксированный ID
-            if sb_l2:
-                l2_id_val = self._hex_to_int(l2_id)
-                sb_l2.blockSignals(True)
-                sb_l2.setValue(l2_id_val)
-                sb_l2.setEnabled(False)
-                sb_l2.blockSignals(False)
+        # Проверяем тип L2
+        is_can_device = name.startswith("CAN_")
+        is_lcsc = (name == "LCSC" and l1_name == "LAN-RA")
         
-        # Настраивает L3
-        if l3_config:
-            l3_type = l3_config.get("type")
-            if l3_type == "fixed":
+        if is_can_device:
 
-                # Фиксированное значение
-                fixed_val = self._hex_to_int(l3_config.get("value", "0"))
-                if sb_l3:
-                    sb_l3.blockSignals(True)
-                    sb_l3.setValue(fixed_val)
-                    sb_l3.setEnabled(False)
-                    sb_l3.blockSignals(False)
-                    sb_l3.setVisible(True)
-            elif l3_type == "x":
-
-                # X селектор (1-8)
-                l3_range = l3_config.get("range", [1, 8])
-                if sb_l3:
-                    sb_l3.blockSignals(True)
-                    sb_l3.setRange(l3_range[0], l3_range[1])
-                    sb_l3.setValue(l3_range[0])
-                    sb_l3.setEnabled(True)
-                    sb_l3.blockSignals(False)
-                    sb_l3.setVisible(True)
-            elif l3_type == "addr":
-                # ADDR (0-15)
-                l3_range = l3_config.get("range", [0, 15])
-                if sb_l3:
-                    sb_l3.blockSignals(True)
-                    sb_l3.setRange(l3_range[0], l3_range[1])
-                    sb_l3.setValue(l3_range[0])
-                    sb_l3.setEnabled(True)
-                    sb_l3.blockSignals(False)
-                    sb_l3.setVisible(True)
-        else:
-            # L3 не нужен
+            # CAN-устройство: показываем спинбокс ADDR (L3)
             if sb_l3:
-                sb_l3.setEnabled(False)
+                sb_l3.blockSignals(True)
+                sb_l3.setRange(0, 15)
+                sb_l3.setValue(0)
+                sb_l3.setEnabled(True)
+                sb_l3.setVisible(True)
+                sb_l3.blockSignals(False)
+            if sb_l2:
+                sb_l2.setVisible(False)
+        elif is_lcsc:
+
+            # LCSC через Lan-ra: показываем спинбокс ADDR (L3)
+            if sb_l3:
+                sb_l3.blockSignals(True)
+                sb_l3.setRange(0, 15)
+                sb_l3.setValue(0)
+                sb_l3.setEnabled(True)
+                sb_l3.setVisible(True)
+                sb_l3.blockSignals(False)
+            if sb_l2:
+                sb_l2.setVisible(False)
+        else:
+
+            # Остальные модули: спинбоксы не нужны
+            if sb_l2:
+                sb_l2.setVisible(False)
+            if sb_l3:
                 sb_l3.setVisible(False)
         
         self._update_combined_id()
@@ -442,11 +399,10 @@ class EasyLoaderWindow(QMainWindow):
 
     def _update_combined_id(self):
 
-        # Собирает ID
+        # Собирает ID по правилам блок-схемы
+
         cb_l1 = getattr(self.ui, 'comboBox_Level_1_Name_Tree', None)
         cb_l2 = getattr(self.ui, 'comboBox_Level_2_Name_Tree', None)
-        sb_l1 = getattr(self.ui, 'spinBox_Level_1_ID_Tree', None)
-        sb_l2 = getattr(self.ui, 'spinBox_Level_2_ID_Tree', None)
         sb_l3 = getattr(self.ui, 'spinBox_Level_3_ID_Tree', None)
         
         l1_name = cb_l1.currentText().strip() if cb_l1 else ""
@@ -455,52 +411,57 @@ class EasyLoaderWindow(QMainWindow):
         if not l1_name:
             combined = ""
         else:
-            # Получает ID L1
-            l1_hex = format(sb_l1.value(), 'x') if sb_l1 else ""
+
+            # Получение ID L1
+            l1_data = self.tree_data.get("level1", {}).get(l1_name, {})
+            l1_id = l1_data.get("id", "0")
             
             if not l2_name:
+
                 # Только L1
-                combined = l1_hex
+                combined = l1_id
             else:
-                # Получает конфиг L2
+
+                # Получение конфига для L2
                 l2_data = self.tree_data.get("level2", {}).get(l2_name, {})
                 l2_id = l2_data.get("id", "0")
-                l3_config = l2_data.get("l3")
                 
-                # Получает ID L2
-                l2_hex = format(sb_l2.value(), 'x') if sb_l2 else ""
+                is_can_device = l2_name.startswith("CAN_")
+                is_lcsc = (l2_name == "LCSC" and l1_name == "LAN-RA")
                 
-                # Проверяет тип L3
-                if l3_config:
-                    l3_type = l3_config.get("type")
+                if is_can_device:
+
+                    # CAN-устройство CAN_ID + ADDR + X/f
+
+                    addr_val = sb_l3.value() if (sb_l3 and sb_l3.isVisible()) else 0
+                    addr_hex = format(addr_val, 'x')
                     
-                    if l3_type == "addr":
+                    # X = ID платы L1 (кроме Lan-ra, для которой f)
+                    if l1_name == "LAN-RA":
+                        x_hex = "f"
 
-                        # L3 = ADDR (берем из spinBox_Level_3_ID_Tree)
-                        l3_hex = format(sb_l3.value(), 'x') if (sb_l3 and sb_l3.isVisible()) else ""
+                    else:
+                        x_hex = l1_id
+                    
+                    # ID = CAN_ID + ADDR + X/f
+                    combined = l2_id + addr_hex + x_hex
 
-                        # ID = L3 + ADDR + L2 + L1 = l3_hex + l2_hex + l1_hex
-                        # Но l3_hex это и есть ADDR
-                        combined = l2_hex + l3_hex + l1_hex
-                    elif l3_type == "fixed":
+                elif is_lcsc:
 
-                        # L3 = фиксированное значение
-                        l3_hex = l3_config.get("value", "0")
+                    # LCSC через Lan-ra: f + ADDR
+                    addr_val = sb_l3.value() if (sb_l3 and sb_l3.isVisible()) else 0
+                    addr_hex = format(addr_val, 'x')
+                    combined = "f" + addr_hex
 
-                        # ID = L3 + L2 + L1
-                        combined = l3_hex + l2_hex + l1_hex
-                    elif l3_type == "x":
-
-                        # L3 = X селектор (1-8)
-                        l3_hex = format(sb_l3.value(), 'X') if (sb_l3 and sb_l3.isVisible()) else ""
-
-                        # ID = L3 + L2 + L1
-                        combined = l3_hex + l2_hex + l1_hex
                 else:
 
-                    # L3 не нужен
-                    # ID = L2 + L1
-                    combined = l2_hex + l1_hex
+                    # Остальные модули: L2_ID + X/f
+                    if l1_name == "LAN-RA":
+                        x_hex = "f"
+                    else:
+                        x_hex = l1_id
+                    
+                    combined = l2_id + x_hex
         
         plainText_ID = getattr(self.ui, 'plainText_ID_Tree', None)
         if plainText_ID:
@@ -513,36 +474,34 @@ class EasyLoaderWindow(QMainWindow):
     def _get_tree_ids(self) -> tuple[str, str, str]:
 
         # Возвращает текущие hex ID для отображения в диалогах
+
         cb_l1 = getattr(self.ui, 'comboBox_Level_1_Name_Tree', None)
         cb_l2 = getattr(self.ui, 'comboBox_Level_2_Name_Tree', None)
-        sb_l1 = getattr(self.ui, 'spinBox_Level_1_ID_Tree', None)
-        sb_l2 = getattr(self.ui, 'spinBox_Level_2_ID_Tree', None)
-        sb_l3 = getattr(self.ui, 'spinBox_Level_3_ID_Tree', None)
         
         l1_name = cb_l1.currentText().strip() if cb_l1 else ""
         l2_name = cb_l2.currentText().strip() if cb_l2 else ""
         
-        l1_hex = format(sb_l1.value(), 'X') if (sb_l1 and sb_l1.isEnabled()) else ""
-        l2_hex = format(sb_l2.value(), 'X') if (sb_l2 and sb_l2.isEnabled()) else ""
+        l1_id = self.tree_data.get("level1", {}).get(l1_name, {}).get("id", "") if l1_name else ""
+        l2_id = self.tree_data.get("level2", {}).get(l2_name, {}).get("id", "") if l2_name else ""
         
-        l3_hex = ""
-        if sb_l3 and sb_l3.isEnabled() and sb_l3.isVisible():
-            l3_hex = format(sb_l3.value(), 'X')
-        
-        return l1_hex, l2_hex, l3_hex
+        return l1_id, l2_id, ""
 
     def select_file_tree(self):
         full_path, display_path = FileSelector.select_firmware_file(self, "Выберите файл прошивки (Tree Mode)")
+
         if full_path:
             self.tree_file_path = full_path
             self.ui.path_Tree.setPlainText(display_path)
 
     def _build_tree_command_args(self, file_or_reset: str) -> list:
         combined_id = self.ui.plainText_ID_Tree.toPlainText().strip()
-        if not combined_id:raise ValueError("Не выбран ни один уровень")
+        if not combined_id:
+            raise ValueError("Не выбран ни один уровень")
+        
         port = self.ui.plainText_Port_Tree.toPlainText().strip()
         ip = self.ui.plainTextIP_Tree.toPlainText().strip()
         args = [combined_id, port, file_or_reset]
+
         if ip and ip.lower() != "none":
             args.append(ip)
         return args
@@ -551,12 +510,14 @@ class EasyLoaderWindow(QMainWindow):
         if not getattr(self, "tree_file_path", None):
             QMessageBox.warning(self, "Ошибка", "Файл прошивки не выбран")
             return
+        
         port = self.ui.plainText_Port_Tree.toPlainText().strip()
         if not port:
             QMessageBox.warning(self, "Ошибка", "Не указан Port")
             return
             
         current_id = self.ui.plainText_ID_Tree.toPlainText().strip()
+
         if getattr(self, 'tree_ip_required', False) and not self.ui.plainTextIP_Tree.toPlainText().strip():
             QMessageBox.warning(self, "Ошибка", "Для этой платы требуется указать IP")
             return
@@ -564,17 +525,22 @@ class EasyLoaderWindow(QMainWindow):
         try:
             args = self._build_tree_command_args(self.tree_file_path)
         except ValueError as e:
+
             QMessageBox.warning(self, "Ошибка", str(e))
             return
+        
         self._start_loader(self, args, "TREE LOAD")
 
     def _on_tree_reset_clicked(self):
+
         port = self.ui.plainText_Port_Tree.toPlainText().strip()
+
         if not port:
-            QMessageBox.warning(self, "Ошибка", "Не указан Port")
+            QMessageBox.warning(self, "Ошибка", "Не указан Port.")
             return
             
         current_id = self.ui.plainText_ID_Tree.toPlainText().strip()
+
         if getattr(self, 'tree_ip_required', False) and not self.ui.plainTextIP_Tree.toPlainText().strip():
             QMessageBox.warning(self, "Ошибка", "Для этой платы требуется указать IP")
             return
@@ -587,18 +553,18 @@ class EasyLoaderWindow(QMainWindow):
             
         l1_name = getattr(self.ui, 'comboBox_Level_1_Name_Tree', None)
         l2_name = getattr(self.ui, 'comboBox_Level_2_Name_Tree', None)
-        l1_id, l2_id, l3_id = self._get_tree_ids()
+        l1_id, l2_id, _ = self._get_tree_ids()
         
         reply = QMessageBox.question(
             self, "⚠️ Подтверждение Reset (Tree)",
             f"Выполнить сброс для цепочки:\n"
             f"L1: {l1_name.currentText() if l1_name else ''} ({l1_id})\n"
             f"L2: {l2_name.currentText() if l2_name else '—'} ({l2_id or '—'})\n"
-            f"L3: {l3_id or '—'}\n"
             f"Итоговый ID: {current_id}\n"
             f"Port: {port}",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No
         )
+
         if reply == QMessageBox.Yes:
             self._start_loader(self, args, "TREE RESET")
 
